@@ -182,5 +182,8 @@ WORKDIR /opt/iroha
 RUN chmod -R 777 /opt/iroha; \
     mkdir -p /tmp/ccache -m 777;
 
+# fetch lcov reports converter
+RUN curl -L -o /tmp/lcov_cobertura.py https://raw.github.com/eriwen/lcov-to-cobertura-xml/master/lcov_cobertura/lcov_cobertura.py
+
 USER iroha-ci
 CMD ["/bin/bash"]

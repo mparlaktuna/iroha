@@ -1,0 +1,33 @@
+# master branch
+image: hyperledger/iroha:latest
+manifests:
+  -
+    image: hyperledger/iroha:x86_64
+    platform:
+      architecture: amd64
+      os: linux
+      features:
+        - sse
+  -
+    image: hyperledger/iroha:armv7l
+    platform:
+      architecture: arm
+      os: linux
+      variant: v7
+
+# develop branch
+image: hyperledger/iroha:develop
+manifests:
+  -
+    image: hyperledger/iroha-develop:x86_64
+    platform:
+      architecture: amd64
+      os: linux
+      features:
+        - sse
+  -
+    image: hyperledger/iroha-develop:armv7l
+    platform:
+      architecture: arm
+      os: linux
+      variant: v7

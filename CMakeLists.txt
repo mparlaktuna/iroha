@@ -142,4 +142,3 @@ if(TESTING)
   enable_testing()
   add_subdirectory(test)
 endif()
-
