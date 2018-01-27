@@ -24,3 +24,4 @@ def doDockerize() {
     docker push hyperledger/iroha-docker:${TAG}
     """
 }
+return this

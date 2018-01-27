@@ -90,9 +90,9 @@ RUN git clone https://github.com/google/googletest /tmp/googletest; \
     cmake --build /tmp/googletest/build --target install -- -j${PARALLELISM}; \
     rm -rf /tmp/googletest
 
-# install spdlog v0.16.3
+# install spdlog
 RUN git clone https://github.com/gabime/spdlog /tmp/spdlog; \
-    (cd /tmp/spdlog ; git checkout ccd675a286f457068ee8c823f8207f13c2325b26); \
+    (cd /tmp/spdlog ; git checkout f85a08622e20b74bff34381cafcb8ef8167b29d0); \
     cmake -DSPDLOG_BUILD_TESTING=OFF -H/tmp/spdlog -B/tmp/spdlog/build; \
     cmake --build /tmp/spdlog/build --target install; \
     rm -rf /tmp/spdlog
@@ -156,27 +156,11 @@ RUN git clone https://github.com/01org/tbb /tmp/tbb; \
 
 # install docker
 ENV DOCKER_VERSION=17.06.0-ce
-RUN curl -L -o /tmp/docker-${DOCKER_VERSION}.tgz https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz; \
+RUN curl -L -o /tmp/docker-${DOCKER_VERSION}.tgz https://download.docker.com/linux/static/stable/armhf/docker-${DOCKER_VERSION}.tgz; \
     tar -xz -C /tmp -f /tmp/docker-${DOCKER_VERSION}.tgz; \
     mv /tmp/docker/* /usr/bin; \
     rm /tmp/docker-${DOCKER_VERSION}.tgz; \
     rm -rf /tmp/docker
-
-# install sonar cli
-ENV SONAR_CLI_VERSION=3.0.3.778
-RUN mkdir -p /opt/sonar; \
-    curl -L -o /tmp/sonar.zip https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_CLI_VERSION}-linux.zip; \
-    unzip -o -d /tmp/sonar-scanner /tmp/sonar.zip; \
-    mv /tmp/sonar-scanner/sonar-scanner-${SONAR_CLI_VERSION}-linux /opt/sonar/scanner; \
-    ln -s -f /opt/sonar/scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner; \
-    rm -rf /tmp/sonar*
-
-# install sonar build wrapper
-RUN curl -L -o /tmp/sonar-build-wrapper.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip; \
-    unzip -o -d /tmp/sonar-build-wrapper /tmp/sonar-build-wrapper.zip; \
-    mv /tmp/sonar-build-wrapper/build-wrapper-linux-x86 /opt/sonar/build-wrapper; \
-    ln -s -f /opt/sonar/build-wrapper/build-wrapper-linux-x86-64 /usr/local/bin/sonar-build-wrapper; \
-    rm -rf /tmp/sonar*
 
 # install latest valgrind
 RUN git clone git://sourceware.org/git/valgrind.git /tmp/valgrind; \
@@ -187,25 +171,21 @@ RUN git clone git://sourceware.org/git/valgrind.git /tmp/valgrind; \
     rm -rf /tmp/valgrind
 
 # install ed25519
-RUN git clone git://github.com/hyperledger/iroha-ed25519.git /tmp/ed25519; \
-    (cd /tmp/ed25519 ; git checkout e7188b8393dbe5ac54378610d53630bd4a180038); \
+RUN git clone git://github.com/warchant/ed25519.git /tmp/ed25519; \
+    (cd /tmp/ed25519 ; git checkout 56d926c4489aa7b2bb664a48294c5ee2d6e1c283); \
     cmake -DCMAKE_BUILD_TYPE=Debug -DTESTING=OFF -H/tmp/ed25519 -B/tmp/ed25519/build; \
     cmake --build /tmp/ed25519/build --target install -- -j${PARALLELISM}; \
     ldconfig; \
     rm -rf /tmp/ed25519
 
-# non-interactive adduser
-#   -m = create home dir
-#   -s = set default shell
-#   iroha-ci = username
-#   -u = userid, default for Ubuntu is 1000
-#   -U = create a group same as username
-#   no password
-RUN useradd -ms /bin/bash iroha-ci -u 1000 -U
-
+RUN adduser iroha-ci
 WORKDIR /opt/iroha
 RUN chmod -R 777 /opt/iroha; \
     mkdir -p /tmp/ccache -m 777;
 
+# fetch lcov reports converter
+RUN curl -L -o /tmp/lcov_cobertura.py https://raw.github.com/eriwen/lcov-to-cobertura-xml/master/lcov_cobertura/lcov_cobertura.py
+
 USER iroha-ci
+
 CMD ["/bin/bash"]
