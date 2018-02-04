@@ -38,7 +38,20 @@ pipeline {
         IROHA_REDIS_PORT = 6379
     }
     agent any
+    options {
+        skipDefaultCheckout()
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
     stages {
+        stage ('Stop same job builds') {
+            steps {
+                script {
+                    // Stop same job running builds if any
+                    def builds = load ".jenkinsci/cancel-builds-same-job.groovy"
+                    builds.cancelSameCommitBuilds()
+                }
+            }
+        }
         stage('Build Debug') {
             when { expression { params.BUILD_TYPE == 'Debug' } }
             parallel {
