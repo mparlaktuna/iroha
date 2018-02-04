@@ -10,6 +10,7 @@
 //   |
 //   |--MacOS-----|----Debug
 //   |            |----Release
+// another commit test
 properties([parameters([
     choice(choices: 'Debug\nRelease', description: '', name: 'BUILD_TYPE'),
     booleanParam(defaultValue: true, description: '', name: 'Linux'),
