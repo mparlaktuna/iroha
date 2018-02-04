@@ -39,11 +39,11 @@ pipeline {
     }
     agent any
     options {
-        skipDefaultCheckout()
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
     stages {
         stage ('Stop same job builds') {
+            agent { label 'master' }
             steps {
                 script {
                     // Stop same job running builds if any
@@ -61,10 +61,6 @@ pipeline {
                     steps {
                         script {
                             def dockerize = load ".jenkinsci/dockerize.groovy"
-
-                            // Stop same job running builds if any
-                            def builds = load ".jenkinsci/cancel-builds-same-job.groovy"
-                            builds.cancelSameCommitBuilds()
 
                             sh "docker network create ${env.IROHA_NETWORK}"
 
