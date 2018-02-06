@@ -15,146 +15,275 @@
  * limitations under the License.
  */
 
-#include <gflags/gflags.h>
-#include <grpc++/grpc++.h>
-#include <fstream>
-#include <thread>
-#include "crypto/keys_manager_impl.hpp"
-#include "main/application.hpp"
-#include "main/iroha_conf_loader.hpp"
-#include "main/raw_block_loader.hpp"
+#include "main/irohad.hpp"
+
+using namespace iroha;
+using namespace iroha::ametsuchi;
+using namespace iroha::simulator;
+using namespace iroha::validation;
+using namespace iroha::network;
+using namespace iroha::model;
+using namespace iroha::synchronizer;
+using namespace iroha::torii;
+using namespace iroha::model::converters;
+using namespace iroha::consensus::yac;
 
 /**
- * Gflag validator.
- * Validator for the configuration file path input argument.
- * Path is considered to be valid if it is not empty.
- * @param flag_name - flag name. Must be 'config' in this case
- * @param path      - file name. Should be path to the config file
- * @return true if argument is valid
+ * Configuring iroha daemon
  */
-bool validate_config(const char *flag_name, std::string const &path) {
-  return not path.empty();
+Irohad::Irohad(const std::string &block_store_dir,
+               const std::string &redis_host,
+               size_t redis_port,
+               const std::string &pg_conn,
+               size_t torii_port,
+               size_t internal_port,
+               size_t max_proposal_size,
+               std::chrono::milliseconds proposal_delay,
+               std::chrono::milliseconds vote_delay,
+               std::chrono::milliseconds load_delay,
+               const keypair_t &keypair)
+    : block_store_dir_(block_store_dir),
+      redis_host_(redis_host),
+      redis_port_(redis_port),
+      pg_conn_(pg_conn),
+      torii_port_(torii_port),
+      internal_port_(internal_port),
+      max_proposal_size_(max_proposal_size),
+      proposal_delay_(proposal_delay),
+      vote_delay_(vote_delay),
+      load_delay_(load_delay),
+      keypair(keypair) {
+  log_ = logger::log("IROHAD");
+  log_->info("created");
+  // Initializing storage at this point in order to insert genesis block before
+  // initialization of iroha deamon
+  initStorage();
+}
+
+Irohad::~Irohad() {
+  // Shutting down services used by internal server
+  if (internal_server) {
+    internal_server->Shutdown();
+  }
+  // Shutting down torii server
+  if (torii_server) {
+    torii_server->shutdown();
+  }
+  // Waiting until internal server thread dies
+  if (internal_thread.joinable()) {
+    internal_thread.join();
+  }
+  // Waiting until torii server thread dies
+  if (server_thread.joinable()) {
+    server_thread.join();
+  }
 }
 
 /**
- * Gflag validator.
- * Validator for the keypair files path input argument.
- * Path is considered to be valid if it is not empty.
- * @param flag_name - flag name. Must be 'keypair_name' in this case
- * @param path      - file name. Should be path to the keypair files
- * @return true if argument is valid
+ * Initializing iroha daemon
  */
-bool validate_keypair_name(const char *flag_name, std::string const &path) {
-  return not path.empty();
+void Irohad::init() {
+  initProtoFactories();
+  initPeerQuery();
+  initCryptoProvider();
+  initValidators();
+  initOrderingGate();
+  initSimulator();
+  initBlockLoader();
+  initConsensusGate();
+  initSynchronizer();
+  initPeerCommunicationService();
+
+  // Torii
+  initTransactionCommandService();
+  initQueryService();
 }
 
 /**
- * Creating input argument for the configuration file location.
+ * Dropping iroha daemon storage
  */
-DEFINE_string(config, "", "Specify iroha provisioning path.");
-/**
- * Registering validator for the configuration file location.
- */
-DEFINE_validator(config, &validate_config);
+void Irohad::dropStorage() {
+  storage->dropStorage();
+}
 
 /**
- * Creating input argument for the genesis block file location.
+ * Initializing iroha daemon storage
  */
-DEFINE_string(genesis_block, "", "Specify file with initial block");
+void Irohad::initStorage() {
+  storage =
+      StorageImpl::create(block_store_dir_, redis_host_, redis_port_, pg_conn_);
+
+  log_->info("[Init] => storage", logger::logBool(storage));
+}
 
 /**
- * Creating input argument for the keypair files location.
+ * Creating transaction, query and query response factories
  */
-DEFINE_string(keypair_name, "", "Specify name of .pub and .priv files");
+void Irohad::initProtoFactories() {
+  pb_tx_factory = std::make_shared<PbTransactionFactory>();
+  pb_query_factory = std::make_shared<PbQueryFactory>();
+  pb_query_response_factory = std::make_shared<PbQueryResponseFactory>();
+
+  log_->info("[Init] => converters");
+}
+
 /**
- * Registering validator for the keypair files location.
+ * Initializing peer query interface
  */
-DEFINE_validator(keypair_name, &validate_keypair_name);
+void Irohad::initPeerQuery() {
+  wsv = std::make_shared<ametsuchi::PeerQueryWsv>(storage->getWsvQuery());
 
-int main(int argc, char *argv[]) {
-  auto log = logger::log("MAIN");
-  log->info("start");
+  log_->info("[Init] => peer query");
+}
 
-  // Check if validators are registered.
-  if (not config_validator_registered
-      or not keypair_name_validator_registered) {
-    // Abort execution if not
-    log->error("Flag validator is not registered");
-    return EXIT_FAILURE;
-  }
+/**
+ * Initializing crypto provider
+ */
+void Irohad::initCryptoProvider() {
+  crypto_verifier = std::make_shared<ModelCryptoProviderImpl>(keypair);
 
-  namespace mbr = config_members;
+  log_->info("[Init] => crypto provider");
+}
 
-  // Parsing command line arguments
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-  gflags::ShutDownCommandLineFlags();
+/**
+ * Initializing validators
+ */
+void Irohad::initValidators() {
+  stateless_validator =
+      std::make_shared<StatelessValidatorImpl>(crypto_verifier);
+  stateful_validator = std::make_shared<StatefulValidatorImpl>();
+  chain_validator = std::make_shared<ChainValidatorImpl>();
 
-  // Reading iroha configuration file
-  auto config = parse_iroha_config(FLAGS_config);
-  log->info("config initialized");
+  log_->info("[Init] => validators");
+}
 
-  // Reading public and private key files
-  iroha::KeysManagerImpl keysManager(FLAGS_keypair_name);
-  iroha::keypair_t keypair{};
-  // Check if both keys are read properly
-  if (auto loadedKeypair = keysManager.loadKeys()) {
-    keypair = *loadedKeypair;
-  } else {
-    // Abort execution if not
-    log->error("Failed to load keypair");
-    return EXIT_FAILURE;
-  }
+/**
+ * Initializing ordering gate
+ */
+void Irohad::initOrderingGate() {
+  ordering_gate =
+      ordering_init.initOrderingGate(wsv, max_proposal_size_, proposal_delay_);
+  log_->info("[Init] => init ordering gate - [{}]",
+             logger::logBool(ordering_gate));
+}
 
-  // Configuring iroha daemon
-  Irohad irohad(config[mbr::BlockStorePath].GetString(),
-                config[mbr::RedisHost].GetString(),
-                config[mbr::RedisPort].GetUint(),
-                config[mbr::PgOpt].GetString(),
-                config[mbr::ToriiPort].GetUint(),
-                config[mbr::InternalPort].GetUint(),
-                config[mbr::MaxProposalSize].GetUint(),
-                std::chrono::milliseconds(config[mbr::ProposalDelay].GetUint()),
-                std::chrono::milliseconds(config[mbr::VoteDelay].GetUint()),
-                std::chrono::milliseconds(config[mbr::LoadDelay].GetUint()),
-                keypair);
+/**
+ * Initializing iroha verified proposal creator and block creator
+ */
+void Irohad::initSimulator() {
+  simulator = std::make_shared<Simulator>(ordering_gate,
+                                          stateful_validator,
+                                          storage,
+                                          storage->getBlockQuery(),
+                                          crypto_verifier);
 
-  // Check if iroha daemon storage was successfully initialized
-  if (not irohad.storage) {
-    // Abort execution if not
-    log->error("Failed to initialize storage");
-    return EXIT_FAILURE;
-  }
+  log_->info("[Init] => init simulator");
+}
 
-  // Check if genesis block path was specified
-  if (not FLAGS_genesis_block.empty()) {
-    // If it is so, read genesis block and store it to iroha storage
-    iroha::main::BlockLoader loader;
-    auto file = loader.loadFile(FLAGS_genesis_block);
-    auto block = loader.parseBlock(file.value());
+/**
+ * Initializing block loader
+ */
+void Irohad::initBlockLoader() {
+  block_loader = loader_init.initBlockLoader(
+      wsv, storage->getBlockQuery(), crypto_verifier);
 
-    // Check that provided genesis block file was correct
-    if (not block.has_value()) {
-      // Abort execution if not
-      log->error("Failed to parse genesis block");
-      return EXIT_FAILURE;
-    }
+  log_->info("[Init] => block loader");
+}
 
-    // clear previous storage if any
-    irohad.dropStorage();
+/**
+ * Initializing consensus gate
+ */
+void Irohad::initConsensusGate() {
+  consensus_gate = yac_init.initConsensusGate(
+      wsv, simulator, block_loader, keypair, vote_delay_, load_delay_);
 
-    log->info("Block is parsed");
+  log_->info("[Init] => consensus gate");
+}
 
-    // Applying transactions from genesis block to iroha storage
-    irohad.storage->insertBlock(block.value());
-    log->info("Genesis block inserted, number of transactions: {}",
-              block.value().transactions.size());
-  }
-  // init pipeline components
-  irohad.init();
+/**
+ * Initializing synchronizer
+ */
+void Irohad::initSynchronizer() {
+  synchronizer = std::make_shared<SynchronizerImpl>(
+      consensus_gate, chain_validator, storage, block_loader);
 
-  // runs iroha
-  log->info("Running iroha");
-  irohad.run();
+  log_->info("[Init] => synchronizer");
+}
 
-  return 0;
+/**
+ * Initializing peer communication service
+ */
+void Irohad::initPeerCommunicationService() {
+  pcs = std::make_shared<PeerCommunicationServiceImpl>(ordering_gate,
+                                                       synchronizer);
+
+  pcs->on_proposal().subscribe(
+      [this](auto) { log_->info("~~~~~~~~~| PROPOSAL ^_^ |~~~~~~~~~ "); });
+
+  pcs->on_commit().subscribe(
+      [this](auto) { log_->info("~~~~~~~~~| COMMIT =^._.^= |~~~~~~~~~ "); });
+
+  log_->info("[Init] => pcs");
+}
+
+/**
+ * Initializing transaction command service
+ */
+void Irohad::initTransactionCommandService() {
+  auto tx_processor =
+      std::make_shared<TransactionProcessorImpl>(pcs, stateless_validator);
+
+  command_service = std::make_unique<::torii::CommandService>(
+      pb_tx_factory, tx_processor, storage);
+
+  log_->info("[Init] => command service");
+}
+
+/**
+ * Initializing query command service
+ */
+void Irohad::initQueryService() {
+  auto query_processing_factory = std::make_unique<QueryProcessingFactory>(
+      storage->getWsvQuery(), storage->getBlockQuery());
+
+  auto query_processor = std::make_shared<QueryProcessorImpl>(
+      std::move(query_processing_factory), stateless_validator);
+
+  query_service = std::make_unique<::torii::QueryService>(
+      pb_query_factory, pb_query_response_factory, query_processor);
+
+  log_->info("[Init] => query service");
+}
+
+/**
+ * Run iroha daemon
+ */
+void Irohad::run() {
+  // Initializing torii server
+  std::string ip = "0.0.0.0";
+  torii_server =
+      std::make_unique<ServerRunner>(ip + ":" + std::to_string(torii_port_));
+
+  // Initializing internal server
+  grpc::ServerBuilder builder;
+  int port = 0;
+  builder.AddListeningPort(ip + ":" + std::to_string(internal_port_),
+                           grpc::InsecureServerCredentials(),
+                           &port);
+  builder.RegisterService(ordering_init.ordering_gate_transport.get());
+  builder.RegisterService(ordering_init.ordering_service_transport.get());
+  builder.RegisterService(yac_init.consensus_network.get());
+  builder.RegisterService(loader_init.service.get());
+  // Run internal server
+  internal_server = builder.BuildAndStart();
+  // Run torii server
+  server_thread = std::thread([this] {
+    torii_server->append(std::move(command_service))
+        .append(std::move(query_service))
+        .run();
+  });
+  log_->info("===> iroha initialized");
+  // Wait until servers shutdown
+  torii_server->waitForServersReady();
+  internal_server->Wait();
 }

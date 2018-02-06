@@ -23,7 +23,7 @@
 #include "cryptography/ed25519_sha3_impl/internal/sha3_hash.hpp"
 #include "datetime/time.hpp"
 #include "framework/test_subscriber.hpp"
-#include "main/application.hpp"
+#include "main/irohad.hpp"
 #include "main/raw_block_loader.hpp"
 #include "model/generators/block_generator.hpp"
 #include "module/irohad/ametsuchi/ametsuchi_fixture.hpp"
