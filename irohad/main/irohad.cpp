@@ -255,6 +255,32 @@ void Irohad::initQueryService() {
   log_->info("[Init] => query service");
 }
 
+void Irohad::recoverVSW() {
+  log_->info("[Recover WSV] => start");
+
+  // get all blocks starting from the genesis
+  std::vector<model::Block> blocks;
+  storage->getBlockQuery()->getBlocksFrom(1)
+      .as_blocking()
+      .subscribe([&blocks](auto block) {
+        blocks.push_back(block);
+      });
+
+  dropStorage();
+
+  // apply blocks one by one
+  auto mutableStorage = storage->createMutableStorage();
+  std::for_each(blocks.begin(), blocks.end(), [&mutableStorage](auto block) {
+            mutableStorage->apply(block,
+                              [](const auto &block, auto &query, const auto &hash) {
+                                return true;
+                              });
+  });
+  storage->commit(std::move(mutableStorage));
+
+  log_->info("[Recover WSV] => completed");
+}
+
 /**
  * Run iroha daemon
  */
