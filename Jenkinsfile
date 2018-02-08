@@ -16,8 +16,11 @@ properties([parameters([
     booleanParam(defaultValue: false, description: '', name: 'ARM'),
     booleanParam(defaultValue: false, description: '', name: 'MacOS'),
     booleanParam(defaultValue: true, description: 'Whether we should build docs or not', name: 'Doxygen'),
-    string(defaultValue: '4', description: 'How much parallelism should we exploit. "4" is optimal for machines with modest amount of memory and at least 4 cores', name: 'PARALLELISM')]),
-    pipelineTriggers([cron('@daily')])])
+    string(defaultValue: '4', description: 'How much parallelism should we exploit. "4" is optimal for machines with modest amount of memory and at least 4 cores', name: 'PARALLELISM')])])
+
+// Trigger Develop build every day
+String nightlyBuild = BRANCH_NAME == "develop" ? "@midnight" : ""
+
 pipeline {
     environment {
         CCACHE_DIR = '/opt/.ccache'
@@ -37,10 +40,15 @@ pipeline {
         IROHA_POSTGRES_PORT = 5432
         IROHA_REDIS_PORT = 6379
     }
-    agent any
     options {
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
+    triggers {
+        parameterizedCron('''
+            nightlyBuild %ARM=True;MacOS=True
+        ''')
+    }
+    agent any
     stages {
         stage ('Stop same job builds') {
             agent { label 'master' }
@@ -120,11 +128,10 @@ pipeline {
                                       -DIROHA_VERSION=${env.IROHA_VERSION}
                                 """
                                 sh "cmake --build build -- -j${params.PARALLELISM}"
-                                sh "ccache --cleanup"
                                 sh "ccache --show-stats"
 
                                 sh "cmake --build build --target test"
-                                sh "cmake --build build --target gcovr"
+                                //sh "cmake --build build --target gcovr"
                                 sh "cmake --build build --target cppcheck"
 
                                 if ( env.BRANCH_NAME == "master" ||
@@ -133,24 +140,29 @@ pipeline {
                                 }
                                 
                                 // Codecov
-                                sh "bash <(curl -s https://codecov.io/bash) -f build/reports/gcovr.xml -t ${CODECOV_TOKEN} || echo 'Codecov did not collect coverage reports'"
+                                //sh "bash <(curl -s https://codecov.io/bash) -f build/reports/gcovr.xml -t ${CODECOV_TOKEN} || echo 'Codecov did not collect coverage reports'"
 
-                                // Sonar
-                                if (env.CHANGE_ID != null) {
-                                    sh """
-                                        sonar-scanner \
-                                            -Dsonar.github.disableInlineComments \
-                                            -Dsonar.github.repository='hyperledger/iroha' \
-                                            -Dsonar.analysis.mode=preview \
-                                            -Dsonar.login=${SONAR_TOKEN} \
-                                            -Dsonar.projectVersion=${BUILD_TAG} \
-                                            -Dsonar.github.oauth=${SORABOT_TOKEN} \
-                                            -Dsonar.github.pullRequest=${CHANGE_ID}
-                                    """
-                                }
+                                // // Sonar
+                                // if (env.CHANGE_ID != null) {
+                                //     sh """
+                                //         sonar-scanner \
+                                //             -Dsonar.github.disableInlineComments \
+                                //             -Dsonar.github.repository='hyperledger/iroha' \
+                                //             -Dsonar.analysis.mode=preview \
+                                //             -Dsonar.login=${SONAR_TOKEN} \
+                                //             -Dsonar.projectVersion=${BUILD_TAG} \
+                                //             -Dsonar.github.oauth=${SORABOT_TOKEN} \
+                                //             -Dsonar.github.pullRequest=${CHANGE_ID}
+                                //     """
+                                // }
                                 //stash(allowEmpty: true, includes: 'build/compile_commands.json', name: 'Compile commands')
                                 //stash(allowEmpty: true, includes: 'build/reports/', name: 'Reports')
-                                //archive(includes: 'build/bin/,compile_commands.json')                            
+                                //archive(includes: 'build/bin/,compile_commands.json')
+                                sh "lcov --capture --directory ${env.IROHA_BUILD} --config-file .lcovrc --output-file ${env.IROHA_HOME}/reports/coverage_full.info"
+                                sh "lcov --remove ${env.IROHA_HOME}/reports/coverage_full.info '/usr/*' 'schema/*' --config-file .lcovrc -o ${env.IROHA_HOME}/reports/coverage_full_filtered.info"
+                                sh "python /tmp/lcov_cobertura.py ${env.IROHA_HOME}/reports/coverage_full_filtered.info -o ${env.IROHA_HOME}/reports/coverage.xml"                                
+                                cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: '**/reports/coverage.xml', conditionalCoverageTargets: '75, 50, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '75, 50, 0', maxNumberOfBuilds: 50, methodCoverageTargets: '75, 50, 0', onlyStable: false, zoomCoverageChart: false
+
                             }
                         }
                     }
