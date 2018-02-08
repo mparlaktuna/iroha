@@ -2,7 +2,7 @@
 
 def doDebugBuild() {
 	sh "docker network create ${env.IROHA_NETWORK}"
-
+	
 	docker.image('postgres:9.5').run(""
 	    + " -e POSTGRES_USER=${env.IROHA_POSTGRES_USER}"
 	    + " -e POSTGRES_PASSWORD=${env.IROHA_POSTGRES_PASSWORD}"
