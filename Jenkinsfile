@@ -63,11 +63,12 @@ pipeline {
         stage('Build Debug') {
             when { expression { params.BUILD_TYPE == 'Debug' } }
             parallel {
-                stage ('Linux') {                    
+                stage ('Linux') {
                     when { expression { return params.Linux } }
                     agent { label 'linux && x86_64' }
                     steps {
                         script {
+                            sh "git clean -xffd"
                             def dockerize = load ".jenkinsci/dockerize.groovy"
                             def debugBuild = load ".jenkinsci/debug-build.groovy"
                             debugBuild.doDebugBuild()
