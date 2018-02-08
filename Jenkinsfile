@@ -43,11 +43,11 @@ pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
-    triggers {
-        parameterizedCron('''
-            nightlyBuild %ARM=True;MacOS=True
-        ''')
-    }
+    // triggers {
+    //     parameterizedCron('''
+    //         nightlyBuild %ARM=True;MacOS=True
+    //     ''')
+    // }
     agent any
     stages {
         stage ('Stop same job builds') {
