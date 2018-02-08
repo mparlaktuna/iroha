@@ -126,7 +126,7 @@ pipeline {
                                       -Bbuild \
                                       -DCMAKE_BUILD_TYPE=${params.BUILD_TYPE} \
                                       -DIROHA_VERSION=${env.IROHA_VERSION} \
-                                      -DCMAKE_CXX_FLAGS -O1
+                                      -DCMAKE_CXX_FLAGS=-O1
                                 """
                                 sh "cmake --build build -- -j${params.PARALLELISM}"
                                 sh "ccache --show-stats"
