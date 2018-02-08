@@ -116,7 +116,7 @@ pipeline {
                                     ccache --version
                                     ccache --show-stats
                                     ccache --zero-stats
-                                    ccache --max-size=1G
+                                    ccache --max-size=2G
                                 """
                                 sh """
                                     cmake \
@@ -125,7 +125,8 @@ pipeline {
                                       -H. \
                                       -Bbuild \
                                       -DCMAKE_BUILD_TYPE=${params.BUILD_TYPE} \
-                                      -DIROHA_VERSION=${env.IROHA_VERSION}
+                                      -DIROHA_VERSION=${env.IROHA_VERSION} \
+                                      -DCMAKE_CXX_FLAGS -O1
                                 """
                                 sh "cmake --build build -- -j${params.PARALLELISM}"
                                 sh "ccache --show-stats"
@@ -158,10 +159,10 @@ pipeline {
                                 //stash(allowEmpty: true, includes: 'build/compile_commands.json', name: 'Compile commands')
                                 //stash(allowEmpty: true, includes: 'build/reports/', name: 'Reports')
                                 //archive(includes: 'build/bin/,compile_commands.json')
-                                sh "lcov --capture --directory ${env.IROHA_BUILD} --config-file .lcovrc --output-file ${env.IROHA_HOME}/reports/coverage_full.info"
-                                sh "lcov --remove ${env.IROHA_HOME}/reports/coverage_full.info '/usr/*' 'schema/*' --config-file .lcovrc -o ${env.IROHA_HOME}/reports/coverage_full_filtered.info"
-                                sh "python /tmp/lcov_cobertura.py ${env.IROHA_HOME}/reports/coverage_full_filtered.info -o ${env.IROHA_HOME}/reports/coverage.xml"                                
-                                cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: '**/reports/coverage.xml', conditionalCoverageTargets: '75, 50, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '75, 50, 0', maxNumberOfBuilds: 50, methodCoverageTargets: '75, 50, 0', onlyStable: false, zoomCoverageChart: false
+                                sh "lcov --capture --directory build --config-file .lcovrc --output-file build/reports/coverage_full.info"
+                                sh "lcov --remove build/reports/coverage_full.info '/usr/*' 'schema/*' --config-file .lcovrc -o build/reports/coverage_full_filtered.info"
+                                sh "python /tmp/lcov_cobertura.py build/reports/coverage_full_filtered.info -o build/reports/coverage.xml"                                
+                                cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: '**/build/reports/coverage.xml', conditionalCoverageTargets: '75, 50, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '75, 50, 0', maxNumberOfBuilds: 50, methodCoverageTargets: '75, 50, 0', onlyStable: false, zoomCoverageChart: false
 
                             }
                         }
@@ -243,7 +244,8 @@ pipeline {
                                       -H. \
                                       -Bbuild \
                                       -DCMAKE_BUILD_TYPE=${params.BUILD_TYPE} \
-                                      -DIROHA_VERSION=${env.IROHA_VERSION}
+                                      -DIROHA_VERSION=${env.IROHA_VERSION} \
+                                      -DCMAKE_CXX_FLAGS -O1
                                 """
                                 sh "cmake --build build -- -j${params.PARALLELISM}"
                                 sh "ccache --cleanup"
