@@ -4,24 +4,25 @@ def doDockerize() {
     
     sh "cp ${IROHA_BUILD}/iroha.deb ${IROHA_RELEASE}/iroha.deb"
 
-    env.TAG = ""
-    if (env.CHANGE_ID != null) {
-        env.TAG = env.CHANGE_ID
-    }
-    else {
-        if ( env.BRANCH_NAME == "develop" ) {
-            env.TAG = "develop"
-        }
-        elif ( env.BRANCH_NAME == "master" ) {
-            env.TAG = "latest"
-        }
+    if (!( env.BRANCH_NAME == "develop" || env.BRANCH_NAME == "master")) {
+        return 
     }
 
-    sh """
-    echo TAG IS ${env.TAG}
-    docker login -u ${DOCKERHUB_USR} -p ${DOCKERHUB_PSW}
-    docker build -t hyperledger/iroha-docker:${TAG} ${IROHA_RELEASE}
-    docker push hyperledger/iroha-docker:${TAG}
-    """
+    env.TAG = ""
+    env.IMAGE_NAME = ""
+
+    if ( env.BRANCH_NAME == "develop" ) {
+        env.IMAGE_NAME = env.DOCKER_BASE_IMAGE_DEVELOP
+    }
+    elif ( env.BRANCH_NAME == "master" ) {
+        env.IMAGE_NAME = env.DOCKER_BASE_IMAGE_RELEASE
+    }
+    
+    // build only in case we commit into develop or master -- not PR!!
+    sh "TAG=`uname -m`"
+    app = docker.build("${env.IMAGE_NAME}")
+    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials'){
+        app.push("${env.TAG}")
+    }
 }
 return this

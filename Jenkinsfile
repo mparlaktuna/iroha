@@ -32,9 +32,9 @@ pipeline {
         SONAR_TOKEN = credentials('SONAR_TOKEN')
         CODECOV_TOKEN = credentials('CODECOV_TOKEN')
         DOCKERHUB = credentials('DOCKERHUB')
-        DOCKER_IMAGE = 'hyperledger/iroha-docker-develop:v3'
-        DOCKER_BASE_IMAGE_DEVELOP = 'hyperledger/iroha-docker-develop:v3'
-        DOCKER_BASE_IMAGE_RELEASE = 'hyperledger/iroha-docker'
+        DOCKER_IMAGE = 'hyperledger/iroha-docker-develop:v1'
+        DOCKER_BASE_IMAGE_DEVELOP = 'hyperledger/iroha-develop'
+        DOCKER_BASE_IMAGE_RELEASE = 'hyperledger/iroha'
 
         IROHA_NETWORK = "iroha-${GIT_COMMIT}-${BUILD_NUMBER}"
         IROHA_POSTGRES_HOST = "pg-${GIT_COMMIT}-${BUILD_NUMBER}"
@@ -75,10 +75,7 @@ pipeline {
                             dockerize = load ".jenkinsci/dockerize.groovy"
                             debugBuild = load ".jenkinsci/debug-build.groovy"
                             debugBuild.doDebugBuild()
-                            // TODO: move to `Release` as we push image only it this case
-                            if ( env.BRANCH_NAME == "master" ) {
-                                dockerize.doDockerize()
-                            }
+                            dockerize.doDockerize()
                         }
                     }
                     post {
