@@ -21,7 +21,8 @@ def doDebugBuild() {
 	sh "docker pull ${DOCKER_BASE_IMAGE_DEVELOP}"
 	if (env.BRANCH_NAME == 'develop') {
 	    iC = docker.build("hyperledger/iroha:develop-${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT} --build-arg PARALLELISM=${params.PARALLELISM}")
-	
+	}
+	else {
 	    iC = docker.build("hyperledger/iroha:workflow-${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT} --build-arg PARALLELISM=${params.PARALLELISM}")
 	}
 	sh "rm -rf /tmp/${env.GIT_COMMIT}"
