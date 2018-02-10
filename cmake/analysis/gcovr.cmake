@@ -1,6 +1,6 @@
 # https://github.com/bilke/cmake-modules/blob/master/CodeCoverage.cmake
 
-if(CMAKE_BUILD_TYPE NOT STREQUAL Coverage)
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Coverage")
   message(WARNING "Current build type is ${CMAKE_BUILD_TYPE}, but Coverage is recommended to collect better coverage")
 endif()
 

@@ -73,9 +73,9 @@ find_package(pqxx)
 #            gflags            #
 ################################
 # TODO: check that gflags works on all OS
-hunter_add_package(gflags)
-find_package(gflags 2.2 CONFIG REQUIRED)
-#find_package(gflags)
+#hunter_add_package(gflags)
+#find_package(gflags 2.2 CONFIG REQUIRED)
+find_package(gflags)
 
 ##########################
 #        rx c++          #

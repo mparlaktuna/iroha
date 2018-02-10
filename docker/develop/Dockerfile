@@ -161,6 +161,14 @@ RUN git clone git://github.com/hyperledger/iroha-ed25519.git /tmp/ed25519; \
     ldconfig; \
     rm -rf /tmp/ed25519
 
+# install gflags
+RUN git clone https://github.com/gflags/gflags /tmp/gflags; \
+    (cd /tmp/gflags ; git checkout f8a0efe03aa69b3336d8e228b37d4ccb17324b88); \
+    cmake -H/tmp/gflags -B/tmp/gflags/build; \
+    cmake --build /tmp/gflags/build --target install -- -j${PARALLELISM}; \
+    rm -rf /tmp/gflags
+
+
 # non-interactive adduser
 #   -m = create home dir
 #   -s = set default shell

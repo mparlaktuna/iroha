@@ -30,7 +30,12 @@ jobs:
             - v1-build-cache-debug-{{ arch }}-
           paths:
             - $CCACHE_DIR
-
+      - restore_cache:
+          keys:
+            # can be one for all branches, architectures and versions
+            - hunter-cache
+          paths:
+            - $HUNTER_ROOT
       - run:
           name: ccache setup
           command: |
@@ -59,6 +64,10 @@ jobs:
           key: v1-build-cache-debug-{{ arch }}-{{ .Branch }}-{{ epoch }}
           paths:
             - $CCACHE_DIR
+      - save_cache:
+          key: hunter-root-{{ epoch }}
+          paths:
+            - $HUNTER_ROOT
       - run:
           name: unit tests, generate xunit-*.xml
           command: cmake --build $IROHA_BUILD --target test
@@ -92,6 +101,11 @@ jobs:
             - v1-build-cache-release-{{ arch }}-
           paths:
             - $CCACHE_DIR
+      - restore_cache:
+          keys:
+            - hunter-cache
+          paths:
+            - $HUNTER_ROOT
       - run:
           name: ccache setup
           command: |
@@ -123,6 +137,10 @@ jobs:
           key: v1-build-cache-release-{{ arch }}-{{ .Branch }}-{{ epoch }}
           paths:
             - $CCACHE_DIR
+      - save_cache:
+          key: hunter-root-{{ epoch }}
+          paths:
+            - $HUNTER_ROOT
       - run:
           name: copy deb file
           command: |
@@ -280,6 +298,11 @@ jobs:
             - $CCACHE_DIR
       - restore_cache:
           keys:
+            - hunter-cache
+          paths:
+            - $HUNTER_ROOT
+      - restore_cache:
+          keys:
             - v1-external-{{ arch }}-{{ .Branch }}
             - v1-external-{{ arch }}
           paths:
@@ -316,6 +339,10 @@ jobs:
           key: v1-external-{{ arch }}-{{ .Branch }}-{{ epoch }}
           paths:
             - external
+      - save_cache:
+          key: hunter-root-{{ epoch }}
+          paths:
+            - $HUNTER_ROOT
       - run: ccache --show-stats
       - run:
           name: rename artifacts
