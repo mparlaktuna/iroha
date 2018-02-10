@@ -19,7 +19,7 @@ manifests:
 image: hyperledger/iroha:develop
 manifests:
   -
-    image: hyperledger/iroha-develop:amd64
+    image: hyperledger/iroha-develop:x86_64
     platform:
       architecture: amd64
       os: linux
