@@ -32,22 +32,58 @@ def doReleaseBuild() {
 	        ccache --zero-stats
 	        ccache --max-size=2G
 	    """
-	    sh """
-	        cmake \
-	          -H. \
-	          -Bbuild \
-	          -DCMAKE_BUILD_TYPE=${params.BUILD_TYPE} \
-	          -DIROHA_VERSION=${env.IROHA_VERSION}
-	    """
-	    // build and save the deb package
-	    sh "cmake --build build -- -j${params.PARALLELISM}"
-	    sh "ccache --show-stats"
-	    sh "cp ${IROHA_BUILD}/iroha.deb /tmp/${GIT_COMMIT}"
-	    
-	    sh "lcov --capture --directory build --config-file .lcovrc --output-file build/reports/coverage_full.info"
-	    sh "lcov --remove build/reports/coverage_full.info '/usr/*' 'test/*' 'schema/*' --config-file .lcovrc -o build/reports/coverage_full_filtered.info"
-	    sh "python /tmp/lcov_cobertura.py build/reports/coverage_full_filtered.info -o build/reports/coverage.xml"                                
-	    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: '**/build/reports/coverage.xml', conditionalCoverageTargets: '75, 50, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '75, 50, 0', maxNumberOfBuilds: 50, methodCoverageTargets: '75, 50, 0', onlyStable: false, zoomCoverageChart: false
+	    def cmake_options = ""
+		if (params.JavaBindings) {
+    		cmake_options += " -DSWIG_JAVA=ON "
+    	}
+    	if (params.PythonBindings) {
+    		cmake_options += " -DSWIG_PYTHON=ON "
+    	}
+	    if (params.BindingsOnly) {
+	    	// In case language specific options were not set,
+	    	// build for every language
+	    	if (!params.JavaBindings && !params.PythonBindings) {
+	    		cmake_options += " -DSWIG_JAVA=ON -DSWIG_PYTHON=ON "
+	    	}
+	    	sh """
+	    		cmake \
+	    		  -H. \
+	    		  -Bbuild \
+	    		  ${cmake_options}
+	    	"""
+	    	sh "cmake --build build --target irohajava -- -j${params.PARALLELISM}"
+	    	sh "cmake --build build --target irohapy -- -j${params.PARALLELISM}"
+	    	// TODO: publish artifacts
+	    }
+	    else {	    
+		    sh """
+		        cmake \
+		          -H. \
+		          -Bbuild \
+		          -DCMAKE_BUILD_TYPE=${params.BUILD_TYPE} \
+		          -DIROHA_VERSION=${env.IROHA_VERSION} \
+		          ${cmake_options}
+		    """
+		    sh "cmake --build build -- -j${params.PARALLELISM}"
+		    sh "ccache --show-stats"
+		    // copy build package to the volume
+		    sh "cp ${IROHA_BUILD}/iroha.deb /tmp/${GIT_COMMIT}"
+		    
+		    if (params.JavaBindings) {
+		    	sh "cmake --build build --target irohajava -- -j${params.PARALLELISM}"
+		    	// TODO: publish artifacts
+
+		    }
+		    if (params.PythonBindings) {
+		    	sh "cmake --build build --target irohapy -- -j${params.PARALLELISM}"
+		    	// TODO: publish artifacts
+		    }
+			
+			sh "lcov --capture --directory build --config-file .lcovrc --output-file build/reports/coverage_full.info"
+		    sh "lcov --remove build/reports/coverage_full.info '/usr/*' 'test/*' 'schema/*' --config-file .lcovrc -o build/reports/coverage_full_filtered.info"
+		    sh "python /tmp/lcov_cobertura.py build/reports/coverage_full_filtered.info -o build/reports/coverage.xml"                                
+		    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: '**/build/reports/coverage.xml', conditionalCoverageTargets: '75, 50, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '75, 50, 0', maxNumberOfBuilds: 50, methodCoverageTargets: '75, 50, 0', onlyStable: false, zoomCoverageChart: false
+		}   
 	}
 
 	sh "curl -L -o /tmp/${env.GIT_COMMIT}/Dockerfile --create-dirs https://raw.githubusercontent.com/hyperledger/iroha/${env.GIT_COMMIT}/docker/release/${platform}/Dockerfile"
