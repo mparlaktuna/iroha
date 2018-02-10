@@ -8,7 +8,6 @@ def doDockerize() {
         return 
     }
 
-    env.TAG = ""
     env.IMAGE_NAME = ""
 
     if ( env.BRANCH_NAME == "develop" ) {
@@ -19,10 +18,10 @@ def doDockerize() {
     }
     
     // build only in case we commit into develop or master -- not PR!!
-    sh "TAG=`uname -m`"
+    def platform = sh(script: 'uname -m', returnStdout: true).trim()
     app = docker.build("${env.IMAGE_NAME}")
     docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials'){
-        app.push("${env.TAG}")
+        app.push("${platform}")
     }
 }
 return this
