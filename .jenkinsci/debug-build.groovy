@@ -20,10 +20,13 @@ def doDebugBuild() {
 	// speeds up consequent image builds as we simply tag them 
 	sh "docker pull ${DOCKER_BASE_IMAGE_DEVELOP}"
 	if (env.BRANCH_NAME == 'develop') {
-	    iC = docker.build("hyperledger/iroha:develop-${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT} --build-arg PARALLELISM=${params.PARALLELISM}")
+	    iC = docker.build("hyperledger/iroha-develop:${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT}")
+		docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials'){
+        	iC.push("${platform}")
+        }
 	}
 	else {
-	    iC = docker.build("hyperledger/iroha:workflow-${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT} --build-arg PARALLELISM=${params.PARALLELISM}")
+	    iC = docker.build("hyperledger/iroha-workflow:${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT}")
 	}
 	sh "rm -rf /tmp/${env.GIT_COMMIT}"
 	iC.inside(""
