@@ -20,11 +20,9 @@ def doDebugBuild() {
 	// speeds up consequent image builds as we simply tag them 
 	sh "docker pull ${DOCKER_BASE_IMAGE_DEVELOP}"
 	if (env.BRANCH_NAME == 'develop') {
-	    iC = docker.build("hyperledger/iroha:develop-${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT}")
-	    // TODO: push image with `develop` tag
-	}
-	else {
-	    iC = docker.build("hyperledger/iroha:workflow-${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT}")
+	    iC = docker.build("hyperledger/iroha:develop-${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT} --build-arg PARALLELISM=${params.PARALLELISM}")
+	
+	    iC = docker.build("hyperledger/iroha:workflow-${GIT_COMMIT}-${BUILD_NUMBER}", "-f /tmp/${env.GIT_COMMIT}/Dockerfile /tmp/${env.GIT_COMMIT} --build-arg PARALLELISM=${params.PARALLELISM}")
 	}
 	sh "rm -rf /tmp/${env.GIT_COMMIT}"
 	iC.inside(""
@@ -35,7 +33,8 @@ def doDebugBuild() {
 	    + " -e IROHA_REDIS_HOST=${env.IROHA_REDIS_HOST}"
 	    + " -e IROHA_REDIS_PORT=${env.IROHA_REDIS_PORT}"
 	    + " --network=${env.IROHA_NETWORK}"
-	    + " -v /var/jenkins/ccache:${CCACHE_DIR}") {
+	    + " -v /var/jenkins/ccache:${CCACHE_DIR}"
+	    + " -v /var/jenkins/hunter:${HUNTER_ROOT}") {
 
 	    def scmVars = checkout scm
 	    env.IROHA_VERSION = "0x${scmVars.GIT_COMMIT}"
