@@ -49,7 +49,7 @@ def doDebugBuild() {
 	        ccache --zero-stats
 	        ccache --max-size=2G
 	    """
-	    cmake_options = ""
+	    def cmake_options = ""
 		if (params.JavaBindings) {
     		cmake_options += " -DSWIG_JAVA=ON "
     	}
@@ -66,7 +66,7 @@ def doDebugBuild() {
 	    		cmake \
 	    		  -H. \
 	    		  -Bbuild \
-	    		  ${env.cmake_options}
+	    		  ${cmake_options}
 	    	"""
 	    	sh "cmake --build build --target irohajava -- -j${params.PARALLELISM}"
 	    	sh "cmake --build build --target irohapy -- -j${params.PARALLELISM}"
@@ -81,7 +81,7 @@ def doDebugBuild() {
 		          -Bbuild \
 		          -DCMAKE_BUILD_TYPE=${params.BUILD_TYPE} \
 		          -DIROHA_VERSION=${env.IROHA_VERSION} \
-		          ${env.cmake_options}
+		          ${cmake_options}
 		    """
 		    sh "cmake --build build -- -j${params.PARALLELISM}"
 		    sh "ccache --show-stats"

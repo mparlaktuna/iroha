@@ -18,7 +18,7 @@ properties([parameters([
     booleanParam(defaultValue: true, description: 'Whether build docs or not', name: 'Doxygen'),
     booleanParam(defaultValue: false, description: 'Whether build Java bindings', name: 'JavaBindings'),
     booleanParam(defaultValue: false, description: 'Whether build Python bindings', name: 'PythonBindings'),
-    booleanParam(defaultValue: true, description: 'Whether build bindings only w/o Iroha itself', name: 'BindingsOnly'),
+    booleanParam(defaultValue: false, description: 'Whether build bindings only w/o Iroha itself', name: 'BindingsOnly'),
     string(defaultValue: '4', description: 'How much parallelism should we exploit. "4" is optimal for machines with modest amount of memory and at least 4 cores', name: 'PARALLELISM')])])
 
 // Trigger Develop build every day
