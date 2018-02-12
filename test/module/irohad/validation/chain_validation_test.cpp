@@ -48,7 +48,7 @@ class ChainValidationTest : public ::testing::Test {
     block.sigs.emplace_back();
     block.sigs.back().pubkey = peer.pubkey;
     block.prev_hash.fill(0);
-    hash = block.prev_hash;;
+    hash = block.prev_hash;
   }
 
   /**
@@ -82,7 +82,7 @@ TEST_F(ChainValidationTest, ValidCase) {
 
   EXPECT_CALL(*query, getPeers()).WillOnce(Return(peers));
 
-  EXPECT_CALL(*storage, apply(block, _))
+  EXPECT_CALL(*storage, apply(/* block */ _, _)) // TODO replace with shared_model block
       .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
 
   auto new_block = getBlockBuilder().build();
@@ -97,7 +97,7 @@ TEST_F(ChainValidationTest, FailWhenDifferentPrevHash) {
 
   EXPECT_CALL(*query, getPeers()).WillOnce(Return(peers));
 
-  EXPECT_CALL(*storage, apply(block, _))
+  EXPECT_CALL(*storage, apply(/* block */ _, _)) // TODO replace with shared_model block
       .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
 
 
@@ -110,9 +110,9 @@ TEST_F(ChainValidationTest, FailWhenNoSupermajority) {
   // Valid previous hash, no supermajority, correct peers subset => invalid
   EXPECT_CALL(*query, getPeers()).WillOnce(Return(peers));
 
-  EXPECT_CALL(*storage, apply(block, _))
+  block.sigs.clear();
+  EXPECT_CALL(*storage, apply(/* block */ _, _)) // TODO replace with shared_model block
       .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
-
 
   auto new_block = getBlockBuilder().build();
   ASSERT_FALSE(validator->validateBlock(new_block, *storage));
@@ -125,7 +125,7 @@ TEST_F(ChainValidationTest, FailWhenBadPeer) {
 
   EXPECT_CALL(*query, getPeers()).WillOnce(Return(peers));
 
-  EXPECT_CALL(*storage, apply(block, _))
+  EXPECT_CALL(*storage, apply(/* block */ _, _)) // TODO replace with shared_model block
       .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
 
   auto new_block = getBlockBuilder().build();
@@ -140,7 +140,7 @@ TEST_F(ChainValidationTest, ValidWhenValidateChainFromOnePeer) {
 
   auto block_observable = rxcpp::observable<>::just(block);
 
-  EXPECT_CALL(*storage, apply(block, _))
+  EXPECT_CALL(*storage, apply(/* block */ _, _)) // TODO replace with shared_model block
       .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
 
   ASSERT_TRUE(validator->validateChain(block_observable, *storage));
