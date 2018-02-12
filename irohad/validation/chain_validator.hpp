@@ -22,6 +22,7 @@
 
 #include "ametsuchi/mutable_storage.hpp"
 #include "model/commit.hpp"
+#include "interfaces/iroha_internal/block.hpp"
 
 namespace iroha {
   namespace validation {
@@ -54,7 +55,7 @@ namespace iroha {
        * @param storage -  storage that may be modified during block appliance
        * @return true if block is valid and can be applied, false otherwise
        */
-      virtual bool validateBlock(const model::Block &block,
+      virtual bool validateBlock(const shared_model::interface::Block &block,
                                  ametsuchi::MutableStorage &storage) = 0;
     };
   }  // namespace validation

@@ -30,7 +30,7 @@ namespace iroha {
       bool validateChain(Commit blocks,
                          ametsuchi::MutableStorage &storage) override;
 
-      bool validateBlock(const model::Block &block,
+      bool validateBlock(const shared_model::interface::Block &block,
                          ametsuchi::MutableStorage &storage) override;
 
      private:

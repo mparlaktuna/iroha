@@ -20,7 +20,7 @@
 #include "ametsuchi/impl/postgres_wsv_query.hpp"
 #include "consensus/consensus_common.hpp"
 
-#include "backend/protobuf/from_old_model.hpp"
+#include "backend/protobuf/from_old_model.hpp" // TODO remove this after relocation to shared_model
 
 namespace iroha {
   namespace validation {
@@ -28,9 +28,8 @@ namespace iroha {
       log_ = logger::log("ChainValidator");
     }
 
-    bool ChainValidatorImpl::validateBlock(const model::Block &old_block,
+    bool ChainValidatorImpl::validateBlock(const shared_model::interface::Block &block,
                                            ametsuchi::MutableStorage &storage) {
-      auto block = shared_model::proto::from_old(old_block);
       log_->info("validate block: height {}, hash {}",
                  block.height(),
                  block.hash().hex());
@@ -47,8 +46,9 @@ namespace iroha {
             and consensus::peersSubset(old_block.sigs, peers.value());
       };
 
+      auto old_block = block.makeOldModel(); // TODO remove this after relocation to shared_model
       // Apply to temporary storage
-      return storage.apply(old_block, apply_block);
+      return storage.apply(*old_block, apply_block);
     }
 
     bool ChainValidatorImpl::validateChain(Commit blocks,
@@ -60,7 +60,7 @@ namespace iroha {
             log_->info("Validating block: height {}, hash {}",
                        block.height(),
                        block.hash().hex());
-            return this->validateBlock(old_block, storage);
+            return this->validateBlock(block, storage);
           })
           .as_blocking()
           .first();
