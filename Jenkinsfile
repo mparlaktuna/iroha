@@ -13,7 +13,7 @@
 
 properties(
     [
-    pipelineTriggers(triggers),
+    // pipelineTriggers(triggers),
     parameters([
         choice(choices: 'Debug\nRelease', description: '', name: 'BUILD_TYPE'),
         booleanParam(defaultValue: true, description: '', name: 'Linux'),
@@ -52,10 +52,6 @@ pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
-
-    triggers {
-        cron('00 20 * * *')
-    }
     
 
     // triggers {
@@ -72,21 +68,9 @@ pipeline {
                     // Stop same job running builds if any
                     def builds = load ".jenkinsci/cancel-builds-same-job.groovy"
                     builds.cancelSameCommitBuilds()
-                    startedByTimer = false
-                    // set cron job for running pipeline at nights
-                    if (env.BRANCH_NAME == "develop") {
-                        fnc = load ".jenkinsci/nightly-timer-detect.groovy"
-                        startedByTimer = fnc.isJobStartedByTimer()
-                        if ( startedByTimer )
-                        {
-                            sh """
-                                echo ================================================================================================
-                                echo ===================================THIS JOB IS STARTED BY TIMER=================================
-                                echo ================================================================================================
-                            """
-                        }
-                    }
                 }
+                def x = load ".jenkinsci/nightly-timer-detect.groovy"
+                x.createPipelineTriggers()
             }
         }
         stage('Build Debug') {
