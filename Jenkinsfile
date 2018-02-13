@@ -10,16 +10,20 @@
 //   |
 //   |--MacOS-----|----Debug
 //   |            |----Release
-properties([parameters([
-    choice(choices: 'Debug\nRelease', description: '', name: 'BUILD_TYPE'),
-    booleanParam(defaultValue: true, description: '', name: 'Linux'),
-    booleanParam(defaultValue: false, description: '', name: 'ARM'),
-    booleanParam(defaultValue: false, description: '', name: 'MacOS'),
-    booleanParam(defaultValue: true, description: 'Whether build docs or not', name: 'Doxygen'),
-    booleanParam(defaultValue: false, description: 'Whether build Java bindings', name: 'JavaBindings'),
-    booleanParam(defaultValue: false, description: 'Whether build Python bindings', name: 'PythonBindings'),
-    booleanParam(defaultValue: false, description: 'Whether build bindings only w/o Iroha itself', name: 'BindingsOnly'),
-    string(defaultValue: '4', description: 'How much parallelism should we exploit. "4" is optimal for machines with modest amount of memory and at least 4 cores', name: 'PARALLELISM')])])
+
+properties(
+    [
+    pipelineTriggers(triggers),
+    parameters([
+        choice(choices: 'Debug\nRelease', description: '', name: 'BUILD_TYPE'),
+        booleanParam(defaultValue: true, description: '', name: 'Linux'),
+        booleanParam(defaultValue: false, description: '', name: 'ARM'),
+        booleanParam(defaultValue: false, description: '', name: 'MacOS'),
+        booleanParam(defaultValue: true, description: 'Whether build docs or not', name: 'Doxygen'),
+        booleanParam(defaultValue: false, description: 'Whether build Java bindings', name: 'JavaBindings'),
+        booleanParam(defaultValue: false, description: 'Whether build Python bindings', name: 'PythonBindings'),
+        booleanParam(defaultValue: false, description: 'Whether build bindings only w/o Iroha itself', name: 'BindingsOnly'),
+        string(defaultValue: '4', description: 'How much parallelism should we exploit. "4" is optimal for machines with modest amount of memory and at least 4 cores', name: 'PARALLELISM')])])
 
 // Trigger Develop build every day
 String nightlyBuild = BRANCH_NAME == "develop" ? "@midnight" : ""
@@ -48,6 +52,22 @@ pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
+    def triggers = []
+    def startedByTimer = false
+    // set cron job for running pipeline at nights
+    if (env.BRANCH_NAME == "develop") {
+        triggers << cron('45 19 * * *')
+        def fnc = load ".jenkinsci/nightly-timer-detect.groovy"
+        startedByTimer = fnc.isJobStartedByTimer()
+        if ( startedByTimer )
+        {
+            sh """
+                echo ================================================================================================
+                echo ===================================THIS JOB IS STARTED BY TIMER=================================
+                echo ================================================================================================
+            """
+        }
+}
     // triggers {
     //     parameterizedCron('''
     //         nightlyBuild %ARM=True;MacOS=True
