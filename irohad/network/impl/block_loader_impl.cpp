@@ -115,7 +115,15 @@ nonstd::optional<Block> BlockLoaderImpl::retrieveBlock(
 }
 
 nonstd::optional<Peer> BlockLoaderImpl::findPeer(Peer::KeyType pubkey) {
-  auto peers = peer_query_->getLedgerPeers();
+  auto shared_peers = peer_query_->getLedgerPeers();
+  auto peers = shared_peers | [](auto &a) {
+    std::vector<model::Peer> peers;
+    std::transform(
+        a.begin(), a.end(), std::back_inserter(peers), [](auto &peer) {
+          return *(peer->makeOldModel());
+        });
+    return nonstd::make_optional(peers);
+  };
   if (not peers.has_value()) {
     log_->error(kPeerRetrieveFail);
     return nonstd::nullopt;

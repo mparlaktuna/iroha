@@ -22,6 +22,8 @@
 #include <nonstd/optional.hpp>
 #include <vector>
 
+#include "interfaces/common_objects/peer.hpp"
+
 namespace iroha {
 
   namespace model {
@@ -39,7 +41,7 @@ namespace iroha {
        * Fetch peers stored in ledger
        * @return list of peers in insertion to ledger order
        */
-      virtual nonstd::optional<std::vector<model::Peer>> getLedgerPeers() = 0;
+      virtual nonstd::optional<std::vector<std::shared_ptr<shared_model::interface::Peer>>> getLedgerPeers() = 0;
 
       virtual ~PeerQuery() = default;
     };

@@ -31,20 +31,36 @@ namespace iroha {
           : query_(std::move(peer_query)) {}
 
       nonstd::optional<ClusterOrdering> PeerOrdererImpl::getInitialOrdering() {
-        return query_->getLedgerPeers() |
+        auto shared_lst = query_->getLedgerPeers();
+        auto lst = shared_lst | [](auto &a) {
+          std::vector<model::Peer> peers;
+          std::transform(
+              a.begin(), a.end(), std::back_inserter(peers), [](auto &peer) {
+                return *(peer->makeOldModel());
+              });
+          return nonstd::make_optional(peers);
+        };
+        return lst |
             [](const auto &peers) { return ClusterOrdering::create(peers); };
       }
 
       nonstd::optional<ClusterOrdering> PeerOrdererImpl::getOrdering(
           const YacHash &hash) {
-        return query_->getLedgerPeers() | [&hash](auto peers) {
-          std::seed_seq seed(hash.block_hash.begin(), hash.block_hash.end());
-          std::default_random_engine gen(seed);
-          std::shuffle(peers.begin(), peers.end(), gen);
-          return ClusterOrdering::create(peers);
-
-        };
-      }
-    }  // namespace yac
-  }    // namespace consensus
-}  // namespace iroha
+        return query_->getLedgerPeers() | [](auto &a) {
+          std::vector<model::Peer> peers;
+          std::transform(
+              a.begin(), a.end(), std::back_inserter(peers), [](auto &peer) {
+                return *(peer->
+                    makeOldModel());
+              });
+          return nonstd::make_optional(peers);
+        } | [&hash](auto peers) {
+            std::seed_seq seed(hash.block_hash.begin(), hash.block_hash.end());
+            std::default_random_engine gen(seed);
+            std::shuffle(peers.begin(), peers.end(), gen);
+            return ClusterOrdering::create(peers);
+          };
+        }
+      }  // namespace yac
+    }    // namespace yac
+  }      // namespace consensus

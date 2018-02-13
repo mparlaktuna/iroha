@@ -15,17 +15,23 @@
  * limitations under the License.
  */
 
-#ifndef IROHA_PROTO_QUERY_BUILDER_HPP
-#define IROHA_PROTO_QUERY_BUILDER_HPP
+#ifndef IROHA_PEER_BUILDER_HPP
+#define IROHA_PEER_BUILDER_HPP
 
-#include "builders/protobuf/builder_templates/query_template.hpp"
+#include "interfaces/common_objects/account.hpp"
 
 namespace shared_model {
   namespace proto {
+    class PeerBuilder {
+     public:
+      std::shared_ptr<shared_model::interface::Peer> build();
 
-    using QueryBuilder = TemplateQueryBuilder<>;
+      PeerBuilder address(
+          const interface::types::AddressType &address);
 
+      PeerBuilder pubkey(const interface::types::PubkeyType &key);
+    };
   }  // namespace proto
 }  // namespace shared_model
 
-#endif  // IROHA_PROTO_QUERY_BUILDER_HPP
+#endif  // IROHA_PEER_BUILDER_HPP

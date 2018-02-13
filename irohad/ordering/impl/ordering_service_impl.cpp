@@ -59,8 +59,16 @@ namespace iroha {
     void OrderingServiceImpl::publishProposal(model::Proposal &&proposal) {
       std::vector<std::string> peers;
 
-      auto lst = wsv_->getLedgerPeers().value();
-      for (const auto &peer : lst) {
+      auto shared_lst = wsv_->getLedgerPeers();
+      auto lst = shared_lst | [](auto &a) {
+        std::vector<model::Peer> peers;
+        std::transform(
+            a.begin(), a.end(), std::back_inserter(peers), [](auto &peer) {
+              return *(peer->makeOldModel());
+            });
+        return nonstd::make_optional(peers);
+      };
+      for (const auto &peer : lst.value()) {
         peers.push_back(peer.address);
       }
       transport_->publishProposal(std::move(proposal), peers);

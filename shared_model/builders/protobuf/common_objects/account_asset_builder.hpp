@@ -15,17 +15,23 @@
  * limitations under the License.
  */
 
-#ifndef IROHA_PROTO_QUERY_BUILDER_HPP
-#define IROHA_PROTO_QUERY_BUILDER_HPP
+#ifndef IROHA_ACCOUNT_ASSET_BUILDER_HPP
+#define IROHA_ACCOUNT_ASSET_BUILDER_HPP
 
-#include "builders/protobuf/builder_templates/query_template.hpp"
+#include "interfaces/common_objects/account_asset.hpp"
 
 namespace shared_model {
   namespace proto {
+    class AccountAssetBuilder {
+     public:
+      std::shared_ptr<shared_model::interface::AccountAsset> build();
 
-    using QueryBuilder = TemplateQueryBuilder<>;
+      AccountAssetBuilder accountId(const interface::types::AccountIdType &account_id);
 
+      AccountAssetBuilder assetId(const interface::types::AccountIdType &asset_id);
+
+      AccountAssetBuilder balance(const interface::Amount &amount);
+    };
   }  // namespace proto
 }  // namespace shared_model
-
-#endif  // IROHA_PROTO_QUERY_BUILDER_HPP
+#endif  // IROHA_ACCOUNT_ASSET_BUILDER_HPP

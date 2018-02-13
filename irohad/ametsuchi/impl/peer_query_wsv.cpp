@@ -28,7 +28,7 @@ namespace iroha {
     PeerQueryWsv::PeerQueryWsv(std::shared_ptr<WsvQuery> wsv)
         : wsv_(std::move(wsv)) {}
 
-    nonstd::optional<std::vector<model::Peer>> PeerQueryWsv::getLedgerPeers() {
+    nonstd::optional<std::vector<std::shared_ptr<shared_model::interface::Peer>>> PeerQueryWsv::getLedgerPeers() {
       return wsv_->getPeers();
     }
 
