@@ -16,7 +16,9 @@ RUN apt-get update; \
 RUN add-apt-repository -y ppa:git-core/ppa; \
     apt-get update
 
-RUN locate pip3 
+RUN apt-get -y install locate
+    locate pip3 
+    #whereis pip3
 
 # install curl libssl lcov valgrind etc
 RUN apt-get -y --no-install-recommends install build-essential python-software-properties \
