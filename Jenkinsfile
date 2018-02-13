@@ -268,9 +268,9 @@ pipeline {
 void createPipelineTriggers() {
     script {
         def triggers = []
-        if (env.BRANCH_NAME == 'develop') {
+        if (env.BRANCH_NAME == 'feature/ops-experimental-docker') {
             // Run a nightly only for maste
-            triggers = [cron('0 21 * * *')]
+            triggers = [cron('30 20 * * *')]
             def fnc = load ".jenkinsci/nightly-timer-detect.groovy"
             startedByTimer = fnc.isJobStartedByTimer()
             if ( startedByTimer )
