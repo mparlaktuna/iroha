@@ -52,12 +52,14 @@ pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '20'))
     }
-    def triggers = []
-    def startedByTimer = false
+
+    triggers {
+        cron('00 20 * * *')
+    }
+    startedByTimer = false
     // set cron job for running pipeline at nights
     if (env.BRANCH_NAME == "develop") {
-        triggers << cron('45 19 * * *')
-        def fnc = load ".jenkinsci/nightly-timer-detect.groovy"
+        fnc = load ".jenkinsci/nightly-timer-detect.groovy"
         startedByTimer = fnc.isJobStartedByTimer()
         if ( startedByTimer )
         {
