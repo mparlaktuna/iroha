@@ -59,9 +59,9 @@ pipeline {
     //         nightlyBuild %ARM=True;MacOS=True
     //     ''')
     // }
-    triggers {
-        cron('H/4 * * * *')
-    }
+    // triggers {
+    //     cron('H/4 * * * *')
+    // }
     agent any
     stages {
         stage ('Stop same job builds') {
