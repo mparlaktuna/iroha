@@ -17,7 +17,7 @@ RUN add-apt-repository -y ppa:git-core/ppa; \
     apt-get update
 
 RUN apt-get -y install locate \
-    locate pip3 
+    locate pip3 pip
     
 
 # install curl libssl lcov valgrind etc
