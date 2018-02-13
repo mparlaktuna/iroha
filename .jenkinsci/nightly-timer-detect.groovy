@@ -19,33 +19,4 @@ def isJobStartedByTimer() {
  
     return startedByTimer
 }
-
-void createPipelineTriggers() {
-    script {
-        def triggers = []
-        if (env.BRANCH_NAME == 'develop') {
-            // Run a nightly only for maste
-            triggers = [cron('0 21 * * *')]
-            startedByTimer = fnc.isJobStartedByTimer()
-            if ( startedByTimer )
-            {
-                sh """
-                    echo ================================================================================================
-                    echo ===================================THIS JOB IS STARTED BY TIMER=================================
-                    echo ================================================================================================
-                """
-            }
-        }
-        properties([
-                pipelineTriggers(triggers)
-        ])
-    }
-}
 return this
-
-startedByTimer = false
-                    // set cron job for running pipeline at nights
-                    if (env.BRANCH_NAME == "develop") {
-                        fnc = load ".jenkinsci/nightly-timer-detect.groovy"
-                     
-                    }

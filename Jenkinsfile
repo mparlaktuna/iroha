@@ -69,8 +69,7 @@ pipeline {
                     def builds = load ".jenkinsci/cancel-builds-same-job.groovy"
                     builds.cancelSameCommitBuilds()
                 }
-                def x = load ".jenkinsci/nightly-timer-detect.groovy"
-                x.createPipelineTriggers()
+                createPipelineTriggers()
             }
         }
         stage('Build Debug') {
@@ -262,5 +261,29 @@ pipeline {
                 """
             }
         }
+    }
+}
+
+
+void createPipelineTriggers() {
+    script {
+        def triggers = []
+        if (env.BRANCH_NAME == 'develop') {
+            // Run a nightly only for maste
+            triggers = [cron('0 21 * * *')]
+            def fnc = load ".jenkinsci/nightly-timer-detect.groovy"
+            startedByTimer = fnc.isJobStartedByTimer()
+            if ( startedByTimer )
+            {
+                sh """
+                    echo ================================================================================================
+                    echo ===================================THIS JOB IS STARTED BY TIMER=================================
+                    echo ================================================================================================
+                """
+            }
+        }
+        properties([
+                pipelineTriggers(triggers)
+        ])
     }
 }
