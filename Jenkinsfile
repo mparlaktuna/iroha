@@ -59,6 +59,9 @@ pipeline {
     //         nightlyBuild %ARM=True;MacOS=True
     //     ''')
     // }
+    triggers {
+        cron('H/4 * * * *')
+    }
     agent any
     stages {
         stage ('Stop same job builds') {
@@ -69,7 +72,7 @@ pipeline {
                     def builds = load ".jenkinsci/cancel-builds-same-job.groovy"
                     builds.cancelSameCommitBuilds()
                 }
-                createPipelineTriggers()
+                //createPipelineTriggers()
             }
         }
         stage('Build Debug') {
@@ -270,7 +273,7 @@ void createPipelineTriggers() {
         def triggers = []
         if (env.BRANCH_NAME == 'feature/ops-experimental-docker') {
             // Run a nightly only for maste
-            triggers = [cron('1/3 * * * *')]
+            triggers = [cron('H/3 * * * *')]
             def fnc = load ".jenkinsci/nightly-timer-detect.groovy"
             startedByTimer = fnc.isJobStartedByTimer()
             if ( startedByTimer )
@@ -284,16 +287,16 @@ void createPipelineTriggers() {
         }
         properties(
             [
-            pipelineTriggers(triggers)])
-            // parameters([
-            //     choice(choices: 'Debug\nRelease', description: '', name: 'BUILD_TYPE'),
-            //     booleanParam(defaultValue: true, description: '', name: 'Linux'),
-            //     booleanParam(defaultValue: false, description: '', name: 'ARM'),
-            //     booleanParam(defaultValue: false, description: '', name: 'MacOS'),
-            //     booleanParam(defaultValue: true, description: 'Whether build docs or not', name: 'Doxygen'),
-            //     booleanParam(defaultValue: false, description: 'Whether build Java bindings', name: 'JavaBindings'),
-            //     booleanParam(defaultValue: false, description: 'Whether build Python bindings', name: 'PythonBindings'),
-            //     booleanParam(defaultValue: false, description: 'Whether build bindings only w/o Iroha itself', name: 'BindingsOnly'),
-            //     string(defaultValue: '4', description: 'How much parallelism should we exploit. "4" is optimal for machines with modest amount of memory and at least 4 cores', name: 'PARALLELISM')])])
+            // pipelineTriggers(triggers)])
+            parameters([
+                choice(choices: 'Debug\nRelease', description: '', name: 'BUILD_TYPE'),
+                booleanParam(defaultValue: true, description: '', name: 'Linux'),
+                booleanParam(defaultValue: false, description: '', name: 'ARM'),
+                booleanParam(defaultValue: false, description: '', name: 'MacOS'),
+                booleanParam(defaultValue: true, description: 'Whether build docs or not', name: 'Doxygen'),
+                booleanParam(defaultValue: false, description: 'Whether build Java bindings', name: 'JavaBindings'),
+                booleanParam(defaultValue: false, description: 'Whether build Python bindings', name: 'PythonBindings'),
+                booleanParam(defaultValue: false, description: 'Whether build bindings only w/o Iroha itself', name: 'BindingsOnly'),
+                string(defaultValue: '4', description: 'How much parallelism should we exploit. "4" is optimal for machines with modest amount of memory and at least 4 cores', name: 'PARALLELISM')])])
     }
 }
