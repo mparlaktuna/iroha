@@ -59,9 +59,9 @@ pipeline {
     //         nightlyBuild %ARM=True;MacOS=True
     //     ''')
     // }
-    triggers {
-        cron('H/5 * * * *')
-    }
+    // triggers {
+    //     cron('H/5 * * * *')
+    // }
     agent any
     stages {
         stage ('Stop same job builds') {
@@ -71,8 +71,8 @@ pipeline {
                     // Stop same job running builds if any
                     def builds = load ".jenkinsci/cancel-builds-same-job.groovy"
                     builds.cancelSameCommitBuilds()
+                    createPipelineTriggers()
                 }
-                createPipelineTriggers()
             }
         }
         stage('Build Debug') {
@@ -269,19 +269,17 @@ pipeline {
 
 
 void createPipelineTriggers() {
-    script {
-        if (env.BRANCH_NAME == 'feature/ops-experimental-docker') {
-            // Run a nightly only for maste
-            def fnc = load ".jenkinsci/nightly-timer-detect.groovy"
-            startedByTimer = fnc.isJobStartedByTimer()
-            if ( startedByTimer )
-            {
-                sh """
-                    echo ================================================================================================
-                    echo ===================================THIS JOB IS STARTED BY TIMER=================================
-                    echo ================================================================================================
-                """
-            }
+    if (env.BRANCH_NAME == 'feature/ops-experimental-docker') {
+        // Run a nightly only for maste
+        def fnc = load ".jenkinsci/nightly-timer-detect.groovy"
+        startedByTimer = fnc.isJobStartedByTimer()
+        if ( startedByTimer )
+        {
+            sh """
+                echo ================================================================================================
+                echo ===================================THIS JOB IS STARTED BY TIMER=================================
+                echo ================================================================================================
+            """
         }
     }
 }
