@@ -34,21 +34,24 @@ namespace iroha {
                  block.height(),
                  block.hash().hex());
       auto apply_block = [](
-          const auto &old_block, auto &queries, const auto &top_hash) {
-        auto block = shared_model::proto::from_old(old_block);
+          const auto &block, auto &queries, const auto &top_hash) {
         auto peers = queries.getPeers();
         if (not peers.has_value()) {
           return false;
         }
-        return old_block.prev_hash == top_hash
-            and consensus::hasSupermajority(block.signatures().size(),
-                                            peers.value().size())
-            and consensus::peersSubset(old_block.sigs, peers.value());
+        bool consensusSupermajority = consensus::hasSupermajority(block.signatures().size(),
+                                    peers.value().size());
+
+        std::shared_ptr<model::Block> old_block(block.makeOldModel()); // TODO remove this after relocation to shared_model
+        bool peerSubset = consensus::peersSubset(old_block->sigs, peers.value());
+        bool hash = block.prevHash() == top_hash;
+        return hash
+            and consensusSupermajority
+            and peerSubset;
       };
 
-      auto old_block = block.makeOldModel(); // TODO remove this after relocation to shared_model
       // Apply to temporary storage
-      return storage.apply(*old_block, apply_block);
+      return storage.apply(block, apply_block);
     }
 
     bool ChainValidatorImpl::validateChain(Commit blocks,

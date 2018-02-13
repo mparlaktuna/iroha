@@ -46,10 +46,10 @@ namespace iroha {
           std::unique_ptr<pqxx::nontransaction> transaction,
           std::shared_ptr<model::CommandExecutorFactory> command_executors);
 
-      bool apply(const model::Block &block,
-                 std::function<bool(const model::Block &,
-                                    WsvQuery &,
-                                    const hash256_t &)> function) override;
+      bool apply(const shared_model::interface::Block &block,
+                      std::function<bool(const shared_model::interface::Block &,
+                                         WsvQuery &,
+                                         const shared_model::crypto::Hash &)> function) override;
 
       ~MutableStorageImpl() override;
 
