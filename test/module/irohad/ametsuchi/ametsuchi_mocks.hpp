@@ -167,7 +167,7 @@ namespace iroha {
     expected::Result<std::unique_ptr<MutableStorage>, std::string>
     createMockMutableStorage() {
       return expected::makeValue<std::unique_ptr<MutableStorage>>(
-          std::move(std::make_unique<MockMutableStorage>()));
+          std::make_unique<MockMutableStorage>());
     }
 
     class MockMutableFactory : public MutableFactory {
@@ -196,6 +196,9 @@ namespace iroha {
      public:
       MOCK_CONST_METHOD0(getWsvQuery, std::shared_ptr<WsvQuery>(void));
       MOCK_CONST_METHOD0(getBlockQuery, std::shared_ptr<BlockQuery>(void));
+      MOCK_CONST_METHOD0(
+          getOrderingServicePersistentState,
+          std::shared_ptr<OrderingServicePersistentState>(void));
       MOCK_METHOD0(
           createTemporaryWsv,
           expected::Result<std::unique_ptr<TemporaryWsv>, std::string>(void));
