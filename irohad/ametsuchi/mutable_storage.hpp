@@ -18,14 +18,17 @@
 #ifndef IROHA_MUTABLE_STORAGE_HPP
 #define IROHA_MUTABLE_STORAGE_HPP
 
+#include <memory>
+
 #include "common/types.hpp"  // for hash256_t
 
-namespace iroha {
-
-  namespace model {
-    struct Block;
+namespace shared_model {
+  namespace interface {
+    class Block;
   }
+}  // namespace shared_model
 
+namespace iroha {
   namespace ametsuchi {
 
     class WsvQuery;
@@ -35,6 +38,9 @@ namespace iroha {
      * Allows to query the world state view, transactions, and blocks.
      */
     class MutableStorage {
+     protected:
+      using wBlock = std::shared_ptr<shared_model::interface::Block>;
+
      public:
       /**
        * Applies a block to current mutable state
@@ -50,8 +56,8 @@ namespace iroha {
        * otherwise.
        * @return True if block was successfully applied, false otherwise.
        */
-      virtual bool apply(const model::Block &block,
-                         std::function<bool(const model::Block &,
+      virtual bool apply(const wBlock block,
+                         std::function<bool(const wBlock,
                                             WsvQuery &,
                                             const hash256_t &)> function) = 0;
 
