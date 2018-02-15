@@ -19,6 +19,8 @@
 #include <grpc++/server.h>
 #include <grpc++/server_builder.h>
 #include <gtest/gtest.h>
+#include <backend/protobuf/common_objects/peer.hpp>
+#include <validators/field_validator.hpp>
 
 #include "framework/test_subscriber.hpp"
 #include "model/sha3_hash.hpp"
@@ -52,16 +54,16 @@ class BlockLoaderTest : public testing::Test {
     builder.RegisterService(service.get());
     server = builder.BuildAndStart();
 
-    peer = Peer();
-    peer.address = "0.0.0.0:" + std::to_string(port);
+    peer = shared_model::builder::PeerBuilder<shared_model::proto::PeerBuilder, shared_model::validation::FieldValidator>()
+        .address("0.0.0.0:" + std::to_string(port)).build();
     peers.push_back(peer);
 
     ASSERT_TRUE(server);
     ASSERT_NE(port, 0);
   }
 
-  Peer peer;
-  std::vector<Peer> peers;
+  std::shared_ptr<shared_model::interface::Peer> peer;
+  std::vector<std::shared_ptr<shared_model::interface::Peer>> peers;
   std::shared_ptr<MockPeerQuery> peer_query;
   std::shared_ptr<MockBlockQuery> storage;
   std::shared_ptr<MockCryptoProvider> provider;
@@ -80,8 +82,9 @@ TEST_F(BlockLoaderTest, ValidWhenSameTopBlock) {
       .WillOnce(Return(rxcpp::observable<>::just(block)));
   EXPECT_CALL(*storage, getBlocksFrom(block.height + 1))
       .WillOnce(Return(rxcpp::observable<>::empty<Block>()));
+  auto old_peer = *peer->makeOldModel();
   auto wrapper =
-      make_test_subscriber<CallExact>(loader->retrieveBlocks(peer.pubkey), 0);
+      make_test_subscriber<CallExact>(loader->retrieveBlocks(old_peer.pubkey), 0);
   wrapper.subscribe();
 
   ASSERT_TRUE(wrapper.validate());
@@ -101,8 +104,9 @@ TEST_F(BlockLoaderTest, ValidWhenOneBlock) {
       .WillOnce(Return(rxcpp::observable<>::just(block)));
   EXPECT_CALL(*storage, getBlocksFrom(block.height + 1))
       .WillOnce(Return(rxcpp::observable<>::just(top_block)));
+  auto old_peer = *peer->makeOldModel();
   auto wrapper =
-      make_test_subscriber<CallExact>(loader->retrieveBlocks(peer.pubkey), 1);
+      make_test_subscriber<CallExact>(loader->retrieveBlocks(old_peer.pubkey), 1);
   wrapper.subscribe(
       [&top_block](auto block) { ASSERT_EQ(block.height, top_block.height); });
 
@@ -132,8 +136,9 @@ TEST_F(BlockLoaderTest, ValidWhenMultipleBlocks) {
       .WillOnce(Return(rxcpp::observable<>::just(block)));
   EXPECT_CALL(*storage, getBlocksFrom(next_height))
       .WillOnce(Return(rxcpp::observable<>::iterate(blocks)));
+  auto old_peer = *peer->makeOldModel();
   auto wrapper = make_test_subscriber<CallExact>(
-      loader->retrieveBlocks(peer.pubkey), num_blocks);
+      loader->retrieveBlocks(old_peer.pubkey), num_blocks);
   auto height = next_height;
   wrapper.subscribe(
       [&height](auto block) { ASSERT_EQ(block.height, height++); });
@@ -150,7 +155,8 @@ TEST_F(BlockLoaderTest, ValidWhenBlockPresent) {
   EXPECT_CALL(*peer_query, getLedgerPeers()).WillOnce(Return(peers));
   EXPECT_CALL(*storage, getBlocksFrom(1))
       .WillOnce(Return(rxcpp::observable<>::just(requested_block)));
-  auto block = loader->retrieveBlock(peer.pubkey, requested_block.hash);
+  auto old_peer = *peer->makeOldModel();
+  auto block = loader->retrieveBlock(old_peer.pubkey, requested_block.hash);
 
   ASSERT_TRUE(block.has_value());
   ASSERT_EQ(block.value(), requested_block);
@@ -167,7 +173,8 @@ TEST_F(BlockLoaderTest, ValidWhenBlockMissing) {
   EXPECT_CALL(*peer_query, getLedgerPeers()).WillOnce(Return(peers));
   EXPECT_CALL(*storage, getBlocksFrom(1))
       .WillOnce(Return(rxcpp::observable<>::just(present_block)));
-  auto block = loader->retrieveBlock(peer.pubkey, hash);
+  auto old_peer = *peer->makeOldModel();
+  auto block = loader->retrieveBlock(old_peer.pubkey, hash);
 
   ASSERT_FALSE(block.has_value());
 }

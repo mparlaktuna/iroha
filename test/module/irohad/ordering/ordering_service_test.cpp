@@ -66,7 +66,11 @@ class MockOrderingServiceTransport : public network::OrderingServiceTransport {
 class OrderingServiceTest : public ::testing::Test {
  public:
   OrderingServiceTest() {
-    peer.address = address;
+    peer = shared_model::builder::PeerBuilder<
+               shared_model::proto::PeerBuilder,
+               shared_model::validation::FieldValidator>()
+               .address(address)
+               .build();
   }
 
   void SetUp() override {
@@ -78,7 +82,7 @@ class OrderingServiceTest : public ::testing::Test {
   std::condition_variable cv;
   std::mutex m;
   std::string address{"0.0.0.0:50051"};
-  model::Peer peer;
+  std::shared_ptr<shared_model::interface::Peer> peer;
   std::shared_ptr<MockPeerQuery> wsv;
 };
 
@@ -116,7 +120,7 @@ TEST_F(OrderingServiceTest, ValidWhenProposalSizeStrategy) {
       }));
 
   EXPECT_CALL(*wsv, getLedgerPeers())
-      .WillRepeatedly(Return(std::vector<Peer>{peer}));
+      .WillRepeatedly(Return(std::vector<decltype(peer)>{peer}));
 
   for (size_t i = 0; i < 10; ++i) {
     ordering_service->onTransaction(model::Transaction());
@@ -130,7 +134,7 @@ TEST_F(OrderingServiceTest, ValidWhenTimerStrategy) {
   // Init => proposal timer 400 ms => 10 tx by 50 ms => 2 proposals in 1 second
 
   EXPECT_CALL(*wsv, getLedgerPeers())
-      .WillRepeatedly(Return(std::vector<Peer>{peer}));
+      .WillRepeatedly(Return(std::vector<decltype(peer)>{peer}));
 
   const size_t max_proposal = 100;
   const size_t commit_delay = 400;

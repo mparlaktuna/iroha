@@ -354,19 +354,23 @@ TEST_F(ToriiQueriesTest, FindAccountAssetWhenHasRolePermissions) {
               validate(A<const iroha::model::Query &>()))
       .WillOnce(Return(true));
 
-  iroha::model::Account account;
-  account.account_id = "accountA";
+  auto account = shared_model::builder::AccountBuilder<
+      shared_model::proto::AccountBuilder,
+      shared_model::validation::FieldValidator>()
+      .accountId("accountA")
+      .build();
 
-  iroha::model::AccountAsset account_asset;
-  account_asset.account_id = "accountA";
-  account_asset.asset_id = "usd";
-  iroha::Amount amount(100, 2);
-  account_asset.balance = amount;
+  auto amount = shared_model::builder::AmountBuilder<
+      shared_model::proto::AmountBuilder,
+      shared_model::validation::FieldValidator>().intValue(100).precision(2).build();
 
-  iroha::model::Asset asset;
-  asset.asset_id = "usd";
-  asset.domain_id = "USA";
-  asset.precision = 2;
+  auto account_asset = shared_model::builder::AccountAssetBuilder<
+      shared_model::proto::AccountAssetBuilder,
+      shared_model::validation::FieldValidator>().accountId("accountA").assetId("usd").balance(amount),build();
+
+  auto asset = shared_model::builder::AccountAssetBuilder<
+      shared_model::proto::AccountAssetBuilder,
+      shared_model::validation::FieldValidator>().assetId("usd").domainId("USA").precision(2).build();
 
   // TODO: refactor this to use stateful validation mocks
   auto creator = "accountA";

@@ -16,12 +16,12 @@
  */
 
 #include "framework/test_subscriber.hpp"
+#include "model/asset.hpp"
 #include "module/irohad/ametsuchi/ametsuchi_mocks.hpp"
 #include "ordering/impl/ordering_gate_impl.hpp"
 #include "ordering/impl/ordering_gate_transport_grpc.hpp"
 #include "ordering/impl/ordering_service_impl.hpp"
 #include "ordering/impl/ordering_service_transport_grpc.hpp"
-#include "model/asset.hpp"
 
 using namespace iroha::ordering;
 using namespace iroha::model;
@@ -35,7 +35,11 @@ using ::testing::Return;
 class OrderingGateServiceTest : public ::testing::Test {
  public:
   OrderingGateServiceTest() {
-    peer.address = address;
+    peer = shared_model::builder::PeerBuilder<
+               shared_model::proto::PeerBuilder,
+               shared_model::validation::FieldValidator>()
+               .address(address)
+               .build();
     gate_transport = std::make_shared<OrderingGateTransportGrpc>(address);
     gate = std::make_shared<OrderingGateImpl>(gate_transport);
     gate_transport->subscribe(gate);
@@ -107,7 +111,7 @@ class OrderingGateServiceTest : public ::testing::Test {
   std::thread thread;
   std::shared_ptr<grpc::Server> server;
 
-  Peer peer;
+  std::shared_ptr<shared_model::interface::Peer> peer;
   std::shared_ptr<OrderingGateTransportGrpc> gate_transport;
   std::shared_ptr<OrderingServiceTransportGrpc> service_transport;
 };
@@ -117,7 +121,7 @@ TEST_F(OrderingGateServiceTest, SplittingBunchTransactions) {
 
   std::shared_ptr<MockPeerQuery> wsv = std::make_shared<MockPeerQuery>();
   EXPECT_CALL(*wsv, getLedgerPeers())
-      .WillRepeatedly(Return(std::vector<Peer>{peer}));
+      .WillRepeatedly(Return(std::vector<std::shared_ptr<shared_model::interface::Peer>>{peer}));
   const size_t max_proposal = 100;
   const size_t commit_delay = 400;
 
@@ -159,7 +163,7 @@ TEST_F(OrderingGateServiceTest, ProposalsReceivedWhenProposalSize) {
 
   std::shared_ptr<MockPeerQuery> wsv = std::make_shared<MockPeerQuery>();
   EXPECT_CALL(*wsv, getLedgerPeers())
-      .WillRepeatedly(Return(std::vector<Peer>{peer}));
+      .WillRepeatedly(Return(std::vector<std::shared_ptr<shared_model::interface::Peer>>{peer}));
   const size_t max_proposal = 5;
   const size_t commit_delay = 1000;
 
