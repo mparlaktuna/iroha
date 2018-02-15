@@ -37,11 +37,13 @@ namespace iroha {
     class WsvCommand;
 
     class MutableStorageImpl : public MutableStorage {
+
+
       friend class StorageImpl;
 
      public:
       MutableStorageImpl(
-          hash256_t top_hash,
+          HashType top_hash,
           std::unique_ptr<pqxx::lazyconnection> connection,
           std::unique_ptr<pqxx::nontransaction> transaction,
           std::shared_ptr<model::CommandExecutorFactory> command_executors);
@@ -49,15 +51,15 @@ namespace iroha {
       bool apply(const wBlock block,
                  std::function<bool(const wBlock,
                                     WsvQuery &,
-                                    const hash256_t &)> function) override;
+                                    const HashType &)> function) override;
 
       ~MutableStorageImpl() override;
 
      private:
-      hash256_t top_hash_;
+      HashType top_hash_;
       // ordered collection is used to enforce block insertion order in
       // StorageImpl::commit
-      std::map<uint32_t, model::Block> block_store_;
+      std::map<uint32_t, wBlock> block_store_;
 
       std::unique_ptr<pqxx::lazyconnection> connection_;
       std::unique_ptr<pqxx::nontransaction> transaction_;

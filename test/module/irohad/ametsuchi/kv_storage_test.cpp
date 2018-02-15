@@ -29,6 +29,7 @@
 #include "model/permissions.hpp"
 #include "model/sha3_hash.hpp"
 #include "module/irohad/ametsuchi/ametsuchi_fixture.hpp"
+#include "backend/protobuf/from_old_model.hpp"
 
 using namespace iroha::ametsuchi;
 using namespace iroha::model;
@@ -93,7 +94,8 @@ class KVTest : public AmetsuchiTest {
 
     {
       auto ms = storage->createMutableStorage();
-      ms->apply(block1, [](const auto &blk, auto &query, const auto &top_hash) {
+      auto bl = std::make_shared<shared_model::proto::Block>(shared_model::proto::from_old(block1));
+      ms->apply(bl, [](const auto &blk, auto &query, const auto &top_hash) {
         return true;
       });
       storage->commit(std::move(ms));

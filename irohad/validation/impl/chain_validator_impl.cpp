@@ -19,6 +19,7 @@
 
 #include "ametsuchi/impl/postgres_wsv_query.hpp"
 #include "consensus/consensus_common.hpp"
+#include "backend/protobuf/from_old_model.hpp"
 
 namespace iroha {
   namespace validation {
@@ -37,14 +38,16 @@ namespace iroha {
         if (not peers.has_value()) {
           return false;
         }
-        return block.prev_hash == top_hash
-            and consensus::hasSupermajority(block.sigs.size(),
+        auto bl = std::unique_ptr<model::Block>(block->makeOldModel());
+        return block->prevHash() == top_hash
+            and consensus::hasSupermajority(bl->sigs.size(),
                                             peers.value().size())
-            and consensus::peersSubset(block.sigs, peers.value());
+            and consensus::peersSubset(bl->sigs, peers.value());
       };
 
       // Apply to temporary storage
-      return storage.apply(block, apply_block);
+      auto bl = std::make_shared<shared_model::proto::Block>(shared_model::proto::from_old(block));
+      return storage.apply(bl, apply_block);
     }
 
     bool ChainValidatorImpl::validateChain(Commit blocks,

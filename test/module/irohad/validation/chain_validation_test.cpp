@@ -18,6 +18,7 @@
 #include "module/irohad/ametsuchi/ametsuchi_mocks.hpp"
 #include "module/irohad/model/model_mocks.hpp"
 #include "validation/impl/chain_validator_impl.hpp"
+#include "backend/protobuf/from_old_model.hpp"
 
 using namespace iroha;
 using namespace iroha::model;
@@ -31,25 +32,32 @@ using ::testing::InvokeArgument;
 using ::testing::Return;
 
 class ChainValidationTest : public ::testing::Test {
- public:
+
+public:
+  using wBlock = std::shared_ptr<shared_model::interface::Block>;
+  using HashType = shared_model::interface::types::HashType;
+
   void SetUp() override {
     validator = std::make_shared<ChainValidatorImpl>();
     storage = std::make_shared<MockMutableStorage>();
     query = std::make_shared<MockWsvQuery>();
-
     peer.pubkey.fill(2);
     peers = std::vector<Peer>{peer};
 
     block.sigs.emplace_back();
     block.sigs.back().pubkey = peer.pubkey;
     block.prev_hash.fill(0);
-    hash = block.prev_hash;
+
+    bl = std::make_shared<shared_model::proto::Block>(shared_model::proto::from_old(block));
+    hash = bl->prevHash();
   }
 
   Peer peer;
   std::vector<Peer> peers;
   Block block;
-  hash256_t hash;
+  wBlock bl;
+  HashType hash{""};
+
 
   std::shared_ptr<ChainValidatorImpl> validator;
   std::shared_ptr<MockMutableStorage> storage;
@@ -61,8 +69,8 @@ TEST_F(ChainValidationTest, ValidCase) {
 
   EXPECT_CALL(*query, getPeers()).WillOnce(Return(peers));
 
-  EXPECT_CALL(*storage, apply(block, _))
-      .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
+  EXPECT_CALL(*storage, apply(bl, _))
+      .WillOnce(InvokeArgument<1>(ByRef(bl), ByRef(*query), ByRef(hash)));
 
   ASSERT_TRUE(validator->validateBlock(block, *storage));
 }
@@ -70,12 +78,14 @@ TEST_F(ChainValidationTest, ValidCase) {
 TEST_F(ChainValidationTest, FailWhenDifferentPrevHash) {
   // Invalid previous hash, has supermajority, correct peers subset => invalid
 
+  hash256_t hash;
   hash.fill(1);
+  HashType tmp(hash.to_string());
 
   EXPECT_CALL(*query, getPeers()).WillOnce(Return(peers));
 
-  EXPECT_CALL(*storage, apply(block, _))
-      .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
+  EXPECT_CALL(*storage, apply(bl, _))
+      .WillOnce(InvokeArgument<1>(ByRef(bl), ByRef(*query), ByRef(tmp)));
 
   ASSERT_FALSE(validator->validateBlock(block, *storage));
 }
@@ -87,8 +97,8 @@ TEST_F(ChainValidationTest, FailWhenNoSupermajority) {
 
   EXPECT_CALL(*query, getPeers()).WillOnce(Return(peers));
 
-  EXPECT_CALL(*storage, apply(block, _))
-      .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
+  EXPECT_CALL(*storage, apply(bl, _))
+      .WillOnce(InvokeArgument<1>(ByRef(bl), ByRef(*query), ByRef(hash)));
 
   ASSERT_FALSE(validator->validateBlock(block, *storage));
 }
@@ -100,8 +110,8 @@ TEST_F(ChainValidationTest, FailWhenBadPeer) {
 
   EXPECT_CALL(*query, getPeers()).WillOnce(Return(peers));
 
-  EXPECT_CALL(*storage, apply(block, _))
-      .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
+  EXPECT_CALL(*storage, apply(bl, _))
+      .WillOnce(InvokeArgument<1>(ByRef(bl), ByRef(*query), ByRef(hash)));
 
   ASSERT_FALSE(validator->validateBlock(block, *storage));
 }
@@ -113,8 +123,8 @@ TEST_F(ChainValidationTest, ValidWhenValidateChainFromOnePeer) {
 
   auto block_observable = rxcpp::observable<>::just(block);
 
-  EXPECT_CALL(*storage, apply(block, _))
-      .WillOnce(InvokeArgument<1>(ByRef(block), ByRef(*query), ByRef(hash)));
+  EXPECT_CALL(*storage, apply(bl, _))
+      .WillOnce(InvokeArgument<1>(ByRef(bl), ByRef(*query), ByRef(hash)));
 
   ASSERT_TRUE(validator->validateChain(block_observable, *storage));
 }

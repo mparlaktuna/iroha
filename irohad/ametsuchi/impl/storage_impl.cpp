@@ -19,11 +19,13 @@
 
 #include "ametsuchi/impl/flat_file/flat_file.hpp"  // for FlatFile
 #include "ametsuchi/impl/mutable_storage_impl.hpp"
-#include "ametsuchi/impl/postgres_wsv_query.hpp"
 #include "ametsuchi/impl/postgres_block_query.hpp"
+#include "ametsuchi/impl/postgres_wsv_query.hpp"
 #include "ametsuchi/impl/temporary_wsv_impl.hpp"
-#include "model/converters/json_common.hpp"
+#include "backend/protobuf/from_old_model.hpp"
 #include "model/execution/command_executor_factory.hpp"  // for CommandExecutorFactory
+
+using HashType = shared_model::interface::types::HashType;
 
 namespace iroha {
   namespace ametsuchi {
@@ -103,15 +105,17 @@ namespace iroha {
       auto wsv_transaction =
           std::make_unique<pqxx::nontransaction>(*postgres_connection, kTmpWsv);
 
-      nonstd::optional<hash256_t> top_hash;
+      nonstd::optional<HashType> top_hash;
 
       blocks_->getTopBlocks(1)
           .subscribe_on(rxcpp::observe_on_new_thread())
           .as_blocking()
-          .subscribe([&top_hash](auto block) { top_hash = block.hash; });
+          .subscribe([&top_hash](auto block) {
+            top_hash = shared_model::proto::from_old(block).hash();
+          });
 
       return std::make_unique<MutableStorageImpl>(
-          top_hash.value_or(hash256_t{}),
+          top_hash.value_or(HashType("")),
           std::move(postgres_connection),
           std::move(wsv_transaction),
           std::move(command_executors.value()));
@@ -120,9 +124,10 @@ namespace iroha {
     bool StorageImpl::insertBlock(model::Block block) {
       log_->info("create mutable storage");
       auto storage = createMutableStorage();
+      auto bl = std::make_shared<shared_model::proto::Block>(
+          shared_model::proto::from_old(block));
       auto inserted = storage->apply(
-          block,
-          [](const auto &current_block, auto &query, const auto &top_hash) {
+          bl, [](const auto &current_block, auto &query, const auto &top_hash) {
             return true;
           });
       log_->info("block inserted: {}", inserted);
@@ -167,8 +172,7 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
     }
 
     nonstd::optional<ConnectionContext> StorageImpl::initConnections(
-        std::string block_store_dir,
-        std::string postgres_options) {
+        std::string block_store_dir, std::string postgres_options) {
       auto log_ = logger::log("StorageImpl:initConnection");
       log_->info("Start storage creation");
 
@@ -200,8 +204,7 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
     }
 
     std::shared_ptr<StorageImpl> StorageImpl::create(
-        std::string block_store_dir,
-        std::string postgres_options) {
+        std::string block_store_dir, std::string postgres_options) {
       auto ctx = initConnections(block_store_dir, postgres_options);
       if (not ctx.has_value()) {
         return nullptr;
@@ -220,9 +223,10 @@ DROP TABLE IF EXISTS index_by_id_height_asset;
       auto storage_ptr = std::move(mutableStorage);  // get ownership of storage
       auto storage = static_cast<MutableStorageImpl *>(storage_ptr.get());
       for (const auto &block : storage->block_store_) {
+        std::unique_ptr<model::Block> bl(block.second->makeOldModel());
         block_store_->add(block.first,
                           stringToBytes(model::converters::jsonToString(
-                              serializer_.serialize(block.second))));
+                              serializer_.serialize(*bl))));
       }
 
       storage->transaction_->exec("COMMIT;");

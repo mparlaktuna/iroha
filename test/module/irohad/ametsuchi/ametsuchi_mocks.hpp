@@ -151,9 +151,9 @@ namespace iroha {
      public:
       MOCK_METHOD2(
           apply,
-          bool(const model::Block &,
+          bool(const wBlock,
                std::function<
-                   bool(const model::Block &, WsvQuery &, const hash256_t &)>));
+                   bool(const wBlock, WsvQuery &, const HashType &)>));
     };
 
     /**

@@ -24,11 +24,14 @@
 #include "cryptography/public_key.hpp"
 #include "interfaces/common_objects/signature.hpp"
 #include "utils/polymorphic_wrapper.hpp"
+#include "cryptography/hash.hpp"
 
 namespace shared_model {
 
   namespace interface {
     namespace types {
+      /// Hash
+      using HashType = crypto::Hash;
       /// Type of account id
       using AccountIdType = std::string;
       /// Type of precision

@@ -35,6 +35,7 @@
 #include "model/permissions.hpp"
 #include "model/sha3_hash.hpp"
 #include "module/irohad/ametsuchi/ametsuchi_fixture.hpp"
+#include "backend/protobuf/from_old_model.hpp"
 
 using namespace iroha::ametsuchi;
 using namespace iroha::model;
@@ -148,7 +149,8 @@ void validateAccount(W &&wsv,
 template <typename S>
 void apply(S &&storage, const Block &block) {
   auto ms = storage->createMutableStorage();
-  ms->apply(block, [](const auto &, auto &, const auto &) { return true; });
+  auto bl = std::make_shared<shared_model::proto::Block>(shared_model::proto::from_old(block));
+  ms->apply(bl, [](const auto &, auto &, const auto &) { return true; });
   storage->commit(std::move(ms));
 }
 

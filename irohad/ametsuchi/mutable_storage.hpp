@@ -21,6 +21,7 @@
 #include <memory>
 
 #include "common/types.hpp"  // for hash256_t
+#include "interfaces/common_objects/types.hpp"
 
 namespace shared_model {
   namespace interface {
@@ -40,6 +41,7 @@ namespace iroha {
     class MutableStorage {
      protected:
       using wBlock = std::shared_ptr<shared_model::interface::Block>;
+      using HashType = shared_model::interface::types::HashType;
 
      public:
       /**
@@ -59,7 +61,7 @@ namespace iroha {
       virtual bool apply(const wBlock block,
                          std::function<bool(const wBlock,
                                             WsvQuery &,
-                                            const hash256_t &)> function) = 0;
+                                            const HashType &)> function) = 0;
 
       virtual ~MutableStorage() = default;
     };

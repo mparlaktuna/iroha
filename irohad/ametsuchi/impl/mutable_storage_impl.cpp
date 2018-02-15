@@ -22,12 +22,11 @@
 #include "model/execution/command_executor_factory.hpp"
 
 #include "backend/protobuf/from_old_model.hpp"
-#include "model/sha3_hash.hpp"
 
 namespace iroha {
   namespace ametsuchi {
     MutableStorageImpl::MutableStorageImpl(
-        hash256_t top_hash,
+        HashType top_hash,
         std::unique_ptr<pqxx::lazyconnection> connection,
         std::unique_ptr<pqxx::nontransaction> transaction,
         std::shared_ptr<model::CommandExecutorFactory> command_executors)
@@ -44,12 +43,9 @@ namespace iroha {
     }
 
     bool MutableStorageImpl::apply(
-        const model::Block &block,
-        std::function<bool(const model::Block &, WsvQuery &, const hash256_t &)>
+        const wBlock block,
+        std::function<bool(const wBlock , WsvQuery &, const HashType &)>
             function) {
-      auto bl = std::make_shared<shared_model::proto::Block>(
-          shared_model::proto::from_old(block));
-
       auto execute_transaction = [this](auto &transaction) {
         auto execute_command = [this, &transaction](auto command) {
           auto result =
@@ -68,16 +64,17 @@ namespace iroha {
       };
 
       transaction_->exec("SAVEPOINT savepoint_;");
+      auto bl = std::unique_ptr<model::Block>(block->makeOldModel());
       auto result = function(block, *wsv_, top_hash_)
-          and std::all_of(block.transactions.begin(),
-                          block.transactions.end(),
+          and std::all_of(bl->transactions.begin(),
+                          bl->transactions.end(),
                           execute_transaction);
 
       if (result) {
-        block_store_.insert(std::make_pair(block.height, block));
-        block_index_->index(bl);
+        block_store_.insert(std::make_pair(block->height(), block));
+        block_index_->index(block);
 
-        top_hash_ = block.hash;
+        top_hash_ = block->hash();
         transaction_->exec("RELEASE SAVEPOINT savepoint_;");
       } else {
         transaction_->exec("ROLLBACK TO SAVEPOINT savepoint_;");
