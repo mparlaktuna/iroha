@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+#include "builders/protobuf/common_objects/proto_account_asset_builder.hpp"
+#include "builders/protobuf/common_objects/proto_account_builder.hpp"
+#include "builders/protobuf/common_objects/proto_amount_builder.hpp"
+#include "builders/protobuf/common_objects/proto_asset_builder.hpp"
 #include "generator/generator.hpp"
 #include "module/irohad/ametsuchi/ametsuchi_mocks.hpp"
 #include "module/irohad/network/network_mocks.hpp"
 #include "module/irohad/validation/validation_mocks.hpp"
-#include "builders/protobuf/common_objects/proto_account_builder.hpp"
-#include "builders/protobuf/common_objects/proto_amount_builder.hpp"
-#include "builders/protobuf/common_objects/proto_account_asset_builder.hpp"
 // to compare pb amount and iroha amount
 #include "model/converters/pb_common.hpp"
 #include "model/converters/pb_query_factory.hpp"
@@ -227,17 +228,20 @@ TEST_F(ToriiQueriesTest, FindAccountWhenHasReadPermissions) {
 
   auto creator = "accountA";
 
-  iroha::model::Account accountB;
-  accountB.account_id = "accountB";
+  auto accountB = std::shared_ptr<shared_model::interface::Account>(
+      shared_model::proto::AccountBuilder()
+          .accountId("accountB")
+          .build()
+          .copy());
 
   // TODO: refactor this to use stateful validation mocks
   EXPECT_CALL(*wsv_query,
               hasAccountGrantablePermission(
-                  creator, accountB.account_id, can_get_my_account))
+                  creator, accountB->accountId(), can_get_my_account))
       .WillOnce(Return(true));
 
   // Should be called once, after successful stateful validation
-  EXPECT_CALL(*wsv_query, getAccount(accountB.account_id))
+  EXPECT_CALL(*wsv_query, getAccount(accountB->accountId()))
       .WillOnce(Return(accountB));
 
   std::vector<std::string> roles = {"user"};
@@ -266,8 +270,12 @@ TEST_F(ToriiQueriesTest, FindAccountWhenHasRolePermission) {
               validate(A<const iroha::model::Query &>()))
       .WillOnce(Return(true));
 
-  iroha::model::Account account;
-  account.account_id = "accountA";
+  auto account = std::shared_ptr<shared_model::interface::Account>(
+      shared_model::proto::AccountBuilder()
+          .accountId("accountA")
+          .build()
+          .copy());
+  ;
 
   // Should be called once when stateful validation is in progress
   EXPECT_CALL(*wsv_query, getAccount("accountA")).WillOnce(Return(account));
@@ -357,16 +365,25 @@ TEST_F(ToriiQueriesTest, FindAccountAssetWhenHasRolePermissions) {
               validate(A<const iroha::model::Query &>()))
       .WillOnce(Return(true));
 
-  auto account = shared_model::proto::AccountBuilder()
-      .accountId("accountA")
-      .build();
+  auto account =
+      shared_model::proto::AccountBuilder().accountId("accountA").build();
 
   auto amount =
       shared_model::proto::AmountBuilder().intValue(100).precision(2).build();
 
-  auto account_asset = shared_model::proto::AccountAssetBuilder().accountId("accountA").assetId("usd").balance(amount).build();
+  auto account_asset = std::shared_ptr<shared_model::interface::AccountAsset>(
+      shared_model::proto::AccountAssetBuilder()
+          .accountId("accountA")
+          .assetId("usd")
+          .balance(amount)
+          .build()
+          .copy());
 
-  auto asset = shared_model::proto::AssetBuilder().assetId("usd").domainId("USA").precision(2).build();
+  auto asset = shared_model::proto::AssetBuilder()
+                   .assetId("usd")
+                   .domainId("USA")
+                   .precision(2)
+                   .build();
 
   // TODO: refactor this to use stateful validation mocks
   auto creator = "accountA";
@@ -394,12 +411,12 @@ TEST_F(ToriiQueriesTest, FindAccountAssetWhenHasRolePermissions) {
 
   // Check if the fields in account asset response are correct
   ASSERT_EQ(response.account_assets_response().account_asset().asset_id(),
-            account_asset.asset_id);
+            account_asset->assetId());
   ASSERT_EQ(response.account_assets_response().account_asset().account_id(),
-            account_asset.account_id);
+            account_asset->accountId());
   auto iroha_amount_asset = iroha::model::converters::deserializeAmount(
       response.account_assets_response().account_asset().balance());
-  ASSERT_EQ(iroha_amount_asset, account_asset.balance);
+  ASSERT_EQ(iroha_amount_asset, *account_asset->balance().makeOldModel());
   ASSERT_EQ(iroha::hash(query).to_string(), response.query_hash());
 }
 

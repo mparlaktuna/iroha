@@ -199,9 +199,9 @@ TEST_F(AmetsuchiTest, SampleTest) {
   auto wsv = storage->getWsvQuery();
   auto blocks = storage->getBlockQuery();
 
-  const auto domain = "ru", user1name = "user1", user2name = "user2",
-             user1id = "user1@ru", user2id = "user2@ru", assetname = "RUB",
-             assetid = "RUB#ru";
+  const auto domain = "ru", user1name = "userone", user2name = "usertwo",
+             user1id = "userone@ru", user2id = "usertwo@ru", assetname = "rub",
+             assetid = "rub#ru";
 
   std::string account, src_account, dest_account, asset;
   iroha::Amount amount;
@@ -328,11 +328,11 @@ TEST_F(AmetsuchiTest, queryGetAccountAssetTransactionsTest) {
   auto wsv = storage->getWsvQuery();
   auto blocks = storage->getBlockQuery();
 
-  const auto admin = "admin1", domain = "domain", user1name = "user1",
-             user2name = "user2", user3name = "user3", user1id = "user1@domain",
-             user2id = "user2@domain", user3id = "user3@domain",
-             asset1name = "asset1", asset2name = "asset2",
-             asset1id = "asset1#domain", asset2id = "asset2#domain";
+  const auto admin = "admin", domain = "domain", user1name = "userone",
+             user2name = "usertwo", user3name = "userthree", user1id = "userone@domain",
+             user2id = "usertwo@domain", user3id = "userthree@domain",
+             asset1name = "assetone", asset2name = "assettwo",
+             asset1id = "assetone#domain", asset2id = "assettwo#domain";
 
   std::string account, src_account, dest_account, asset;
   iroha::Amount amount;
@@ -472,8 +472,8 @@ TEST_F(AmetsuchiTest, AddSignatoryTest) {
   pubkey1.at(0) = 1;
   pubkey2.at(0) = 2;
 
-  auto user1id = "user1@domain";
-  auto user2id = "user2@domain";
+  auto user1id = "userone@domain";
+  auto user2id = "usertwo@domain";
 
   // 1st tx (create user1 with pubkey1)
   CreateRole createRole;
@@ -481,7 +481,7 @@ TEST_F(AmetsuchiTest, AddSignatoryTest) {
   createRole.permissions = {can_add_peer, can_create_asset, can_get_my_account};
 
   Transaction txn;
-  txn.creator_account_id = "admin1";
+  txn.creator_account_id = "adminone";
 
   txn.commands.push_back(std::make_shared<CreateRole>(createRole));
   CreateDomain createDomain;
@@ -490,7 +490,7 @@ TEST_F(AmetsuchiTest, AddSignatoryTest) {
   txn.commands.push_back(std::make_shared<CreateDomain>(createDomain));
 
   CreateAccount createAccount;
-  createAccount.account_name = "user1";
+  createAccount.account_name = "userone";
   createAccount.domain_id = "domain";
   createAccount.pubkey = pubkey1;
   txn.commands.push_back(std::make_shared<CreateAccount>(createAccount));
@@ -550,10 +550,10 @@ TEST_F(AmetsuchiTest, AddSignatoryTest) {
 
   // 3rd tx (create user2 with pubkey1 that is same as user1's key)
   txn = Transaction();
-  txn.creator_account_id = "admin2";
+  txn.creator_account_id = "admintwo";
 
   createAccount = CreateAccount();
-  createAccount.account_name = "user2";
+  createAccount.account_name = "usertwo";
   createAccount.domain_id = "domain";
   createAccount.pubkey = pubkey1;  // same as user1's pubkey1
   txn.commands.push_back(std::make_shared<CreateAccount>(createAccount));
@@ -691,9 +691,9 @@ TEST_F(AmetsuchiTest, AddSignatoryTest) {
 
 Block getBlock() {
   Transaction txn;
-  txn.creator_account_id = "admin1";
+  txn.creator_account_id = "adminone";
   AddPeer add_peer;
-  add_peer.peer.address = "192.168.0.0";
+  add_peer.peer.address = "192.168.0.0:10001";
   txn.commands.push_back(std::make_shared<AddPeer>(add_peer));
   Block block;
   block.transactions.push_back(txn);

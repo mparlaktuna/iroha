@@ -41,12 +41,12 @@ using namespace iroha::network;
 using namespace iroha::ametsuchi;
 using namespace std::chrono_literals;
 
+using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::DoAll;
 using ::testing::Invoke;
 using ::testing::InvokeWithoutArgs;
 using ::testing::Return;
-using ::testing::_;
 
 static logger::Logger log_ = logger::testLog("OrderingService");
 
@@ -73,15 +73,13 @@ class MockOrderingServiceTransport : public network::OrderingServiceTransport {
 class OrderingServiceTest : public ::testing::Test {
  public:
   OrderingServiceTest() {
-    shared_model::builder::PeerBuilder<
-        shared_model::proto::PeerBuilder,
-        shared_model::validation::FieldValidator>()
-        .address(address)
-        .build()
-        .match(
-            [&](expected::Value<std::shared_ptr<shared_model::interface::Peer>>
-                    &v) { peer = v.value; },
-            [](expected::Error<std::shared_ptr<std::string>>) {});
+    peer = std::shared_ptr<shared_model::interface::Peer>(
+        shared_model::proto::PeerBuilder()
+            .address(address)
+            .pubkey(shared_model::interface::types::PubkeyType(
+                std::string(32, '0')))
+            .build()
+            .copy());
   }
 
   void SetUp() override {
