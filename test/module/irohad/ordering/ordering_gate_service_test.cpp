@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include "builders/common_objects/peer_builder.hpp"
+#include "builders/protobuf/common_objects/proto_peer_builder.hpp"
 #include "framework/test_subscriber.hpp"
 #include "model/asset.hpp"
 #include "module/irohad/ametsuchi/ametsuchi_mocks.hpp"
@@ -22,6 +24,7 @@
 #include "ordering/impl/ordering_gate_transport_grpc.hpp"
 #include "ordering/impl/ordering_service_impl.hpp"
 #include "ordering/impl/ordering_service_transport_grpc.hpp"
+#include "validators/field_validator.hpp"
 
 using namespace iroha::ordering;
 using namespace iroha::model;
@@ -35,11 +38,17 @@ using ::testing::Return;
 class OrderingGateServiceTest : public ::testing::Test {
  public:
   OrderingGateServiceTest() {
-    peer = shared_model::builder::PeerBuilder<
-               shared_model::proto::PeerBuilder,
-               shared_model::validation::FieldValidator>()
-               .address(address)
-               .build();
+    shared_model::builder::PeerBuilder<
+        shared_model::proto::PeerBuilder,
+        shared_model::validation::FieldValidator>()
+        .address(address)
+        .build()
+        .match(
+            [&](iroha::expected::Value<
+                std::shared_ptr<shared_model::interface::Peer>> &v) {
+              peer = v.value;
+            },
+            [](iroha::expected::Error<std::shared_ptr<std::string>>) {});
     gate_transport = std::make_shared<OrderingGateTransportGrpc>(address);
     gate = std::make_shared<OrderingGateImpl>(gate_transport);
     gate_transport->subscribe(gate);
@@ -121,7 +130,8 @@ TEST_F(OrderingGateServiceTest, SplittingBunchTransactions) {
 
   std::shared_ptr<MockPeerQuery> wsv = std::make_shared<MockPeerQuery>();
   EXPECT_CALL(*wsv, getLedgerPeers())
-      .WillRepeatedly(Return(std::vector<std::shared_ptr<shared_model::interface::Peer>>{peer}));
+      .WillRepeatedly(Return(
+          std::vector<std::shared_ptr<shared_model::interface::Peer>>{peer}));
   const size_t max_proposal = 100;
   const size_t commit_delay = 400;
 
@@ -163,7 +173,8 @@ TEST_F(OrderingGateServiceTest, ProposalsReceivedWhenProposalSize) {
 
   std::shared_ptr<MockPeerQuery> wsv = std::make_shared<MockPeerQuery>();
   EXPECT_CALL(*wsv, getLedgerPeers())
-      .WillRepeatedly(Return(std::vector<std::shared_ptr<shared_model::interface::Peer>>{peer}));
+      .WillRepeatedly(Return(
+          std::vector<std::shared_ptr<shared_model::interface::Peer>>{peer}));
   const size_t max_proposal = 5;
   const size_t commit_delay = 1000;
 

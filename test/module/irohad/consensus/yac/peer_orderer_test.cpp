@@ -22,6 +22,9 @@
 #include <boost/range/numeric.hpp>
 #include <iostream>
 #include <unordered_map>
+
+#include "builders/common_objects/peer_builder.hpp"
+#include "builders/protobuf/common_objects/proto_peer_builder.hpp"
 #include "consensus/yac/impl/peer_orderer_impl.hpp"
 #include "consensus/yac/storage/yac_proposal_storage.hpp"
 #include "model/account.hpp"
@@ -30,6 +33,7 @@
 #include "model/domain.hpp"
 #include "module/irohad/ametsuchi/ametsuchi_mocks.hpp"
 #include "module/irohad/consensus/yac/yac_mocks.hpp"
+#include "validators/field_validator.hpp"
 
 using namespace boost::adaptors;
 using namespace iroha::ametsuchi;
@@ -52,9 +56,19 @@ class YacPeerOrdererTest : public ::testing::Test {
   std::vector<std::shared_ptr<shared_model::interface::Peer>> peers = [] {
     std::vector<std::shared_ptr<shared_model::interface::Peer>> result;
     for (size_t i = 1; i <= N_PEERS; ++i) {
-      auto peer = shared_model::builder::PeerBuilder<shared_model::proto::PeerBuilder, shared_model::validation::FieldValidator>().
-      address(std::to_string(i)).build();
-      result.push_back(peer);
+      auto peer = shared_model::builder::PeerBuilder<
+                      shared_model::proto::PeerBuilder,
+                      shared_model::validation::FieldValidator>()
+                      .address(std::to_string(i))
+                      .build();
+      peer.match(
+          [&](iroha::expected::Value<
+              std::shared_ptr<shared_model::interface::Peer>> &v) {
+            result.push_back(v.value);
+          },
+          [](iroha::expected::Error<std::shared_ptr<std::string>> &e) {
+            FAIL();
+          });
     }
     return result;
   }();
@@ -70,7 +84,7 @@ TEST_F(YacPeerOrdererTest, PeerOrdererInitialOrderWhenInvokeNormalCase) {
   auto order = orderer.getInitialOrdering();
   auto old_peers = [this] {
     std::vector<iroha::model::Peer> result;
-    for(auto &peer : peers) {
+    for (auto &peer : peers) {
       result.push_back(*peer->makeOldModel());
     }
     return result;
