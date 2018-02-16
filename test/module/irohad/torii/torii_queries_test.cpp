@@ -364,9 +364,9 @@ TEST_F(ToriiQueriesTest, FindAccountAssetWhenHasRolePermissions) {
   auto amount =
       shared_model::proto::AmountBuilder().intValue(100).precision(2).build();
 
-  auto account_asset = shared_model::proto::AccountAssetBuilder().accountId("accountA").assetId("usd").balance(amount),build();
+  auto account_asset = shared_model::proto::AccountAssetBuilder().accountId("accountA").assetId("usd").balance(amount).build();
 
-  auto asset = shared_model::proto::AccountAssetBuilder().assetId("usd").domainId("USA").precision(2).build();
+  auto asset = shared_model::proto::AssetBuilder().assetId("usd").domainId("USA").precision(2).build();
 
   // TODO: refactor this to use stateful validation mocks
   auto creator = "accountA";

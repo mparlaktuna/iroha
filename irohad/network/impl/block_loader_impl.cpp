@@ -137,8 +137,8 @@ nonstd::optional<iroha::model::Peer> BlockLoaderImpl::findPeer(
   auto it = std::find_if(
       peers.value().begin(), peers.value().end(), [&blob](const auto &peer) {
         return peer->pubkey().size() == blob.size()
-            and std::equal(peer->pubkey().begin(),
-                           peer->pubkey().end(),
+            and std::equal(peer->pubkey().blob().begin(),
+                           peer->pubkey().blob().end(),
                            blob.begin(),
                            blob.end());
       });
