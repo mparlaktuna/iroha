@@ -177,7 +177,7 @@ namespace shared_model {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "GrantPermission");
 
-        validator_.validateAccountId(reason, gp->accountId());
+        validator_.validateAccountId(reason, gp.accountId());
 
         return reason;
       }
@@ -208,8 +208,8 @@ namespace shared_model {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "RevokePermission");
 
-        validator_.validateAccountId(reason, rp->accountId());
-        validator_.validatePermission(reason, rp->permissionName());
+        validator_.validateAccountId(reason, rp.accountId());
+        validator_.validatePermission(reason, rp.permissionName());
 
         return reason;
       }
@@ -257,9 +257,9 @@ namespace shared_model {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "SubtractAssetQuantity");
 
-        validator_.validateAccountId(reason, saq->accountId());
-        validator_.validateAssetId(reason, saq->assetId());
-        validator_.validateAmount(reason, saq->amount());
+        validator_.validateAccountId(reason, saq.accountId());
+        validator_.validateAssetId(reason, saq.assetId());
+        validator_.validateAmount(reason, saq.amount());
 
         return reason;
       }
