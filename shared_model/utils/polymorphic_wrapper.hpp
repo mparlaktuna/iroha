@@ -121,6 +121,10 @@ namespace shared_model {
         return ptr_.get();
       }
 
+      const WrappedType * get() const {
+        return ptr_.get();
+      }
+
      private:
       /// pointer with wrapped value
       std::shared_ptr<WrappedType> ptr_;

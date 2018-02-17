@@ -41,10 +41,12 @@ namespace shared_model {
        */
       Answer validate(
           detail::PolymorphicWrapper<interface::Block> block) const {
-        return Answer();
+        return validate(*block.get());
       }
 
-      Answer answer_;
+      Answer validate(const interface::Block& block) const {
+        return Answer();
+      }
     };
 
   }  // namespace validation

@@ -35,51 +35,74 @@ namespace shared_model {
     class CommandValidatorVisitor
         : public boost::static_visitor<ReasonsGroupType> {
      public:
-      CommandValidatorVisitor(
-          const FieldValidator &validator = FieldValidator())
-          : validator_(validator) {}
+      ReasonsGroupType operator()(
+          const interface::AddAssetQuantity &aaq) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "AddAssetQuantity");
+
+        validator_.validateAccountId(reason, aaq.accountId());
+        validator_.validateAssetId(reason, aaq.assetId());
+        validator_.validateAmount(reason, aaq.amount());
+
+        return reason;
+      }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::AddAssetQuantity> &aaq)
           const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "AddAssetQuantity");
+        return this->operator()(*aaq.get());
+      }
 
-        validator_.validateAccountId(reason, aaq->accountId());
-        validator_.validateAssetId(reason, aaq->assetId());
-        validator_.validateAmount(reason, aaq->amount());
+      ReasonsGroupType operator()(const interface::AddPeer &ap) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "AddPeer");
+
+        validator_.validatePeer(reason, ap.peer());
 
         return reason;
       }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::AddPeer> &ap) const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "AddPeer");
+        return this->operator()(*ap.get());
+      }
 
-        validator_.validatePeer(reason, ap->peer());
+      ReasonsGroupType operator()(const interface::AddSignatory &as) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "AddSignatory");
+
+        validator_.validateAccountId(reason, as.accountId());
+        validator_.validatePubkey(reason, as.pubkey());
 
         return reason;
       }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::AddSignatory> &as) const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "AddSignatory");
+        return this->operator()(*as.get());
+      }
 
-        validator_.validateAccountId(reason, as->accountId());
-        validator_.validatePubkey(reason, as->pubkey());
+      ReasonsGroupType operator()(const interface::AppendRole &ar) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "AppendRole");
+
+        validator_.validateAccountId(reason, ar.accountId());
+        validator_.validateRoleId(reason, ar.roleName());
 
         return reason;
       }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::AppendRole> &ar) const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "AppendRole");
+        return this->operator()(*ar.get());
+      }
 
-        validator_.validateAccountId(reason, ar->accountId());
-        validator_.validateRoleId(reason, ar->roleName());
+      ReasonsGroupType operator()(const interface::CreateAccount &ca) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "CreateAccount");
+
+        validator_.validatePubkey(reason, ca.pubkey());
+        validator_.validateAccountName(reason, ca.accountName());
 
         return reason;
       }
@@ -87,62 +110,70 @@ namespace shared_model {
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::CreateAccount> &ca)
           const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "CreateAccount");
+        return this->operator()(*ca.get());
+      }
 
-        validator_.validatePubkey(reason, ca->pubkey());
-        validator_.validateAccountName(reason, ca->accountName());
+      ReasonsGroupType operator()(const interface::CreateAsset &ca) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "CreateAsset");
+
+        validator_.validateAssetName(reason, ca.assetName());
+        validator_.validateDomainId(reason, ca.domainId());
+        validator_.validatePrecision(reason, ca.precision());
 
         return reason;
       }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::CreateAsset> &ca) const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "CreateAsset");
+        return this->operator()(*ca.get());
+      }
 
-        validator_.validateAssetName(reason, ca->assetName());
-        validator_.validateDomainId(reason, ca->domainId());
-        validator_.validatePrecision(reason, ca->precision());
+      ReasonsGroupType operator()(const interface::CreateDomain &cd) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "CreateDomain");
+
+        validator_.validateDomainId(reason, cd.domainId());
 
         return reason;
       }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::CreateDomain> &cd) const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "CreateDomain");
+        return this->operator()(*cd.get());
+      }
 
-        validator_.validateDomainId(reason, cd->domainId());
+      ReasonsGroupType operator()(const interface::CreateRole &cr) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "CreateRole");
+
+        validator_.validateRoleId(reason, cr.roleName());
+        validator_.validatePermissions(reason, cr.rolePermissions());
 
         return reason;
       }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::CreateRole> &cr) const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "CreateRole");
+        return this->operator()(*cr.get());
+      }
 
-        validator_.validateRoleId(reason, cr->roleName());
-        validator_.validatePermissions(reason, cr->rolePermissions());
+      ReasonsGroupType operator()(const interface::DetachRole &dr) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "DetachRole");
+
+        validator_.validateAccountId(reason, dr.accountId());
+        validator_.validateRoleId(reason, dr.roleName());
 
         return reason;
       }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::DetachRole> &dr) const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "DetachRole");
-
-        validator_.validateAccountId(reason, dr->accountId());
-        validator_.validateRoleId(reason, dr->roleName());
-
-        return reason;
+        return this->operator()(*dr.get());
       }
 
-      ReasonsGroupType operator()(
-          const detail::PolymorphicWrapper<interface::GrantPermission> &gp)
-          const {
+      ReasonsGroupType operator()(const interface::GrantPermission &gp) const {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "GrantPermission");
 
@@ -152,19 +183,28 @@ namespace shared_model {
       }
 
       ReasonsGroupType operator()(
-          const detail::PolymorphicWrapper<interface::RemoveSignatory> &rs)
+          const detail::PolymorphicWrapper<interface::GrantPermission> &gp)
           const {
+        return this->operator()(*gp.get());
+      }
+
+      ReasonsGroupType operator()(const interface::RemoveSignatory &rs) const {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "RemoveSignatory");
 
-        validator_.validateAccountId(reason, rs->accountId());
-        validator_.validatePubkey(reason, rs->pubkey());
+        validator_.validateAccountId(reason, rs.accountId());
+        validator_.validatePubkey(reason, rs.pubkey());
 
         return reason;
       }
+
       ReasonsGroupType operator()(
-          const detail::PolymorphicWrapper<interface::RevokePermission> &rp)
+          const detail::PolymorphicWrapper<interface::RemoveSignatory> &rs)
           const {
+        return this->operator()(*rs.get());
+      }
+
+      ReasonsGroupType operator()(const interface::RevokePermission &rp) const {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "RevokePermission");
 
@@ -175,31 +215,45 @@ namespace shared_model {
       }
 
       ReasonsGroupType operator()(
-          const detail::PolymorphicWrapper<interface::SetAccountDetail> &sad)
+          const detail::PolymorphicWrapper<interface::RevokePermission> &rp)
           const {
+        return this->operator()(*rp.get());
+      }
+
+      ReasonsGroupType operator()(
+          const interface::SetAccountDetail &sad) const {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "SetAccountDetail");
 
-        validator_.validateAccountId(reason, sad->accountId());
-        validator_.validateAccountDetailKey(reason, sad->key());
+        validator_.validateAccountId(reason, sad.accountId());
+        validator_.validateAccountDetailKey(reason, sad.key());
+
+        return reason;
+      }
+
+      ReasonsGroupType operator()(
+          const detail::PolymorphicWrapper<interface::SetAccountDetail> &sad)
+          const {
+        return this->operator()(*sad.get());
+      }
+
+      ReasonsGroupType operator()(const interface::SetQuorum &sq) const {
+        ReasonsGroupType reason;
+        addInvalidCommand(reason, "SetQuorum");
+
+        validator_.validateAccountId(reason, sq.accountId());
+        validator_.validateQuorum(reason, sq.newQuorum());
 
         return reason;
       }
 
       ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::SetQuorum> &sq) const {
-        ReasonsGroupType reason;
-        addInvalidCommand(reason, "SetQuorum");
-
-        validator_.validateAccountId(reason, sq->accountId());
-        validator_.validateQuorum(reason, sq->newQuorum());
-
-        return reason;
+        return this->operator()(*sq.get());
       }
 
       ReasonsGroupType operator()(
-          const detail::PolymorphicWrapper<interface::SubtractAssetQuantity>
-              &saq) const {
+          const interface::SubtractAssetQuantity &saq) const {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "SubtractAssetQuantity");
 
@@ -211,15 +265,25 @@ namespace shared_model {
       }
 
       ReasonsGroupType operator()(
+          const detail::PolymorphicWrapper<interface::SubtractAssetQuantity>
+              &saq) const {
+        return this->operator()(*saq.get());
+      }
+
+      ReasonsGroupType operator()(
           const detail::PolymorphicWrapper<interface::TransferAsset> &ta)
           const {
+        return this->operator()(*ta.get());
+      }
+
+      ReasonsGroupType operator()(const interface::TransferAsset &ta) const {
         ReasonsGroupType reason;
         addInvalidCommand(reason, "TransferAsset");
 
-        validator_.validateAccountId(reason, ta->srcAccountId());
-        validator_.validateAccountId(reason, ta->destAccountId());
-        validator_.validateAssetId(reason, ta->assetId());
-        validator_.validateAmount(reason, ta->amount());
+        validator_.validateAccountId(reason, ta.srcAccountId());
+        validator_.validateAccountId(reason, ta.destAccountId());
+        validator_.validateAssetId(reason, ta.assetId());
+        validator_.validateAmount(reason, ta.amount());
 
         return reason;
       }
@@ -245,38 +309,36 @@ namespace shared_model {
     template <typename FieldValidator, typename CommandValidator>
     class TransactionValidator {
      public:
-      TransactionValidator(
-          const FieldValidator &field_validator = FieldValidator(),
-          const CommandValidator &command_validator = CommandValidator())
-          : field_validator_(field_validator),
-            command_validator_(command_validator) {}
-
       /**
        * Applies validation to given transaction
        * @param tx - transaction to validate
        * @return Answer containing found error if any
        */
       Answer validate(
-          detail::PolymorphicWrapper<interface::Transaction> tx) const {
+          const detail::PolymorphicWrapper<interface::Transaction> &tx) const {
+        return validate(*tx.get());
+      }
+
+      Answer validate(const interface::Transaction &tx) const {
         Answer answer;
         std::string tx_reason_name = "Transaction";
         ReasonsGroupType tx_reason(tx_reason_name, GroupedReasons());
 
-        if (tx->commands().empty()) {
+        if (tx.commands().empty()) {
           tx_reason.second.push_back(
               "Transaction should contain at least one command");
         }
 
         field_validator_.validateCreatorAccountId(tx_reason,
-                                                  tx->creatorAccountId());
-        field_validator_.validateCreatedTime(tx_reason, tx->createdTime());
-        field_validator_.validateCounter(tx_reason, tx->transactionCounter());
+                                                  tx.creatorAccountId());
+        field_validator_.validateCreatedTime(tx_reason, tx.createdTime());
+        field_validator_.validateCounter(tx_reason, tx.transactionCounter());
 
         if (not tx_reason.second.empty()) {
           answer.addReason(std::move(tx_reason));
         }
 
-        for (const auto &command : tx->commands()) {
+        for (const auto &command : tx.commands()) {
           auto reason =
               boost::apply_visitor(command_validator_, command->get());
           if (not reason.second.empty()) {

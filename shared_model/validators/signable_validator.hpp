@@ -32,13 +32,15 @@ namespace shared_model {
         auto answer = ModelValidator::validate(model);
         std::string reason_name = "Signature";
         ReasonsGroupType reason(reason_name, GroupedReasons());
-        FieldValidator().validateSignatures(
-            reason, model->signatures(), model->payload());
+        val_.validateSignatures(reason, model->signatures(), model->payload());
         if (not reason.second.empty()) {
           answer.addReason(std::move(reason));
         }
         return answer;
       }
+
+     private:
+      FieldValidator val_;
     };
   }  // namespace validation
 }  // namespace shared_model

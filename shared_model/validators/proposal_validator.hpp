@@ -34,19 +34,6 @@ namespace shared_model {
      * Class that validates proposal
      */
     class ProposalValidator {
-     private:
-      void validateTransaction(
-          ReasonsGroupType &reason,
-          const detail::PolymorphicWrapper<interface::Transaction> &transaction)
-          const {
-        // TODO 22/01/2018 x3medima17: add stateless validator IR-837
-      }
-
-      void validateHeight(ReasonsGroupType &reason,
-                          const interface::types::HeightType &height) const {
-        // TODO 22/01/2018 x3medima17: add stateless validator IR-837
-      }
-
      public:
       /**
        * Applies validation on proposal
@@ -54,24 +41,13 @@ namespace shared_model {
        * @return Answer containing found error if any
        */
       Answer validate(
-          detail::PolymorphicWrapper<interface::Proposal> prop) const {
-        Answer answer;
-        // TODO 22/01/2018 x3medima17: add stateless validator IR-837
-        ReasonsGroupType reason;
-        reason.first = "Proposal";
-
-        validateHeight(reason, prop->height());
-        for (const auto &tx : prop->transactions()) {
-          validateTransaction(reason, tx);
-        }
-        if (not reason.second.empty()) {
-          answer.addReason(std::move(reason));
-        }
-
-        return answer;
+          const detail::PolymorphicWrapper<interface::Proposal> &prop) const {
+        return validate(*prop.get());
       }
 
-      Answer answer_;
+      Answer validate(const interface::Proposal &proposal) const {
+        return Answer();
+      }
     };
 
   }  // namespace validation
